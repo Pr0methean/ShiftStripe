@@ -1,6 +1,6 @@
 use std::hash::Hasher;
 use std::io::Write;
-use std::iter;
+use std::{io};
 use std::ops::{Shr};
 use rand::{Rng, RngCore, thread_rng};
 use rand_core::block::{BlockRng64, BlockRngCore};
@@ -193,28 +193,36 @@ fn test_hashing_zero_key() {
 }
 
 #[test]
-fn test_diffusion_small_keys() {
+fn test_diffusion_small_keys() -> Result<(), String> {
     (-128i128..128).into_par_iter()
-        .for_each(|permutor_short| {
-        for i in -128..128 {
-            check_diffusion(permutor_short, 0, i - 1, 0, i);
-            check_diffusion(permutor_short, i - 1, 0, i, 0);
-            check_diffusion(permutor_short, i - 1, i, i, i);
-            check_diffusion(permutor_short, i, i - 1, i, i);
-            check_diffusion(permutor_short, i - 1, i - 1, i, i);
-        }
-    });
-    let permutor_short = random_u128(&mut thread_rng()) as i128;
-    for i in -128..128 {
-        check_diffusion(permutor_short, 0, i - 1, 0, i);
-        check_diffusion(permutor_short, i - 1, 0, i, 0);
-        check_diffusion(permutor_short, i - 1, i, i, i);
-        check_diffusion(permutor_short, i, i - 1, i, i);
-        check_diffusion(permutor_short, i - 1, i - 1, i, i);
-    }
+        .map(|permutor_short| {
+            for i in -128..128 {
+                check_diffusion_around(permutor_short, i)?;
+            }
+        })
+        .join_all()?
 }
 
-fn main() {
+#[test]
+fn test_diffusion_random_key() -> Result<(), String> {
+    let permutor_short = random_u128(&mut thread_rng()) as i128;
+    for i in -128..128 {
+        check_diffusion_around(permutor_short, i)?;
+    }
+    Ok(())
+}
+
+fn check_diffusion_around(permutor_short: i128, i: i128) -> Result<(), String> {
+    check_diffusion(permutor_short, 0, i - 1, 0, i)?;
+    check_diffusion(permutor_short, i - 1, 0, i, 0)?;
+    check_diffusion(permutor_short, i - 1, i, i, i)?;
+    check_diffusion(permutor_short, i, i - 1, i, i)?;
+    check_diffusion(permutor_short, i - 1, i - 1, i, i)?;
+    check_diffusion(permutor_short, i - 1, i, i, i)?;
+    Ok(())
+}
+
+fn main() -> io::Result<()> {
     let mut rng = BlockRng64::new(ShiftStripeFeistelRngCore::new_random(&mut thread_rng()));
     let mut stdout = std::io::stdout();
     let mut out_buffer = [0u8; 1024];
@@ -224,7 +232,7 @@ fn main() {
     }
 }
 
-fn check_diffusion(permutor_short: i128, previn1: i128, previn2: i128, thisin1: i128, thisin2: i128) {
+fn check_diffusion(permutor_short: i128, previn1: i128, previn2: i128, thisin1: i128, thisin2: i128) -> Result<(), String> {
     let permutor = 0u128.wrapping_add_signed(permutor_short);
     let previn1_unsigned = 0u128.wrapping_add_signed(previn1);
     let previn2_unsigned = 0u128.wrapping_add_signed(previn2);
@@ -240,8 +248,9 @@ fn check_diffusion(permutor_short: i128, previn1: i128, previn2: i128, thisin1: 
         || bits_difference_2 < 16 || bits_difference_2 > 112
         || (bits_difference_1 + bits_difference_2) < 64
         || (bits_difference_1 + bits_difference_2) > 192 {
-        println!("Warning: for permutor {} and inputs ({}, {}) and ({}, {}), outputs ({:#034x}, {:#034x}) and ({:#034x}, {:#034x}) differ by ({:#034x}, {:#034x})",
+        return Err(format!("Warning: for permutor {} and inputs ({}, {}) and ({}, {}), outputs ({:#034x}, {:#034x}) and ({:#034x}, {:#034x}) differ by ({:#034x}, {:#034x})",
                  permutor_short, previn1, previn2, thisin1, thisin2, prev1, prev2, this1, this2, xor1, xor2
-        );
+        ));
     }
+    Ok(())
 }
