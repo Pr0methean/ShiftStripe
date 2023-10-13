@@ -12,7 +12,7 @@ pub const PRIME_ROTATION_AMOUNTS: [u32; 31] = [
     97, 101, 103, 107, 109, 113, 127,
 ];
 
-// (pi * 2^62) rounded down
+// (pi * 1u128.shl(126)) computed at high precision and rounded down
 pub const META_PERMUTOR: u128 = 0xc90fdaa2_2168c234_c4c6628b_80dc1cd1;
 
 pub const STRIPE_MASKS: [u128; 8] = [
@@ -124,8 +124,8 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
     fn generate(&mut self, results: &mut Self::Results) {
         let (result1, result2) = shift_stripe_feistel(0, self.counter, self.permutor, FIESTEL_ROUNDS_TO_DIFFUSE);
         self.counter = self.counter.wrapping_add(1);
-        results[0] = (result1 >> 64) as u64 ^ (result2 & (u64::MAX as u128)) as u64;
-        results[1] = (result2 >> 64) as u64 ^ (result1 & (u64::MAX as u128)) as u64;
+        results[0] = compress_u128_to_u64(result1);
+        results[1] = compress_u128_to_u64(result2);
     }
 }
 
@@ -136,7 +136,7 @@ impl BlockRngCore for ShiftStripeSimpleRngCore {
     fn generate(&mut self, results: &mut Self::Results) {
         let result128 = shift_stripe_simple(self.counter, self.permutor, SIMPLE_ROUNDS_TO_DIFFUSE);
         self.counter = self.counter.wrapping_add(1);
-        results[0] = (result128 >> 64) as u64 ^ (result128 & (u64::MAX as u128)) as u64;
+        results[0] = compress_u128_to_u64(result128);
     }
 }
 
@@ -144,6 +144,11 @@ impl BlockRngCore for ShiftStripeSimpleRngCore {
 struct ShiftStripeFeedbackRngCore {
     permutor: u128,
     counter: u128,
+}
+
+#[inline]
+const fn compress_u128_to_u64(input: u128) -> u64 {
+    (input >> 64) as u64 ^ (input as u64)
 }
 
 impl BlockRngCore for ShiftStripeFeedbackRngCore {
@@ -154,7 +159,7 @@ impl BlockRngCore for ShiftStripeFeedbackRngCore {
         let (result128, permuted_permutor) = shift_stripe_simple_feedback(self.counter, self.permutor, FEEDBACK_ROUNDS_TO_DIFFUSE);
         self.counter = self.counter.wrapping_add(1);
         self.permutor ^= permuted_permutor;
-        results[0] = (result128 >> 64) as u64 ^ (result128 & (u64::MAX as u128)) as u64;
+        results[0] = compress_u128_to_u64(result128);
     }
 }
 
@@ -218,9 +223,7 @@ impl Hasher for ShiftStripeSponge {
     fn finish(&self) -> u64 {
         let base_result = u128::from_be_bytes(self.state);
         let (final_large_result, _) = shift_stripe_feistel(0, base_result, self.permutor, FIESTEL_ROUNDS_TO_DIFFUSE - 1);
-        let mut result = (final_large_result >> 64) as u64;
-        result ^= (final_large_result & (u64::MAX as u128)) as u64;
-        result
+        compress_u128_to_u64(final_large_result)
     }
 
     fn write(&mut self, bytes: &[u8]) {
