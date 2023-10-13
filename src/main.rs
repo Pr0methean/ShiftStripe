@@ -1,6 +1,5 @@
 use std::hash::Hasher;
 use std::io::Write;
-use std::{io};
 use std::ops::{Shr};
 use rand::{Rng, RngCore, thread_rng};
 use rand_core::block::{BlockRng64, BlockRngCore};
@@ -27,6 +26,7 @@ pub const STRIPE_MASKS: [u128; 8] = [
     u128::MAX
 ];
 
+pub const SIMPLE_ROUNDS_TO_DIFFUSE: usize = 256;
 pub const FIESTEL_ROUNDS_TO_DIFFUSE: usize = 16;
 
 pub fn shift_stripe(input: u128, permutor: u128) -> u128 {
@@ -52,9 +52,9 @@ pub fn unshift_stripe(input: u128, permutor: u128) -> u128 {
 #[test]
 fn test_shift_stripe_reversible_smallnum() {
     for permutor in -128..128 {
-        let permutor = 0u128.wrapping_add_signed(permutor);
+        let permutor = permutor as u128;
         for input in -128..128 {
-            let input = 0u128.wrapping_add_signed(input);
+            let input = input as u128;
             assert_eq!(input, unshift_stripe(shift_stripe(input, permutor), permutor))
         }
     }
@@ -83,13 +83,35 @@ fn shift_stripe_feistel(input1: u128, input2: u128, mut permutor: u128, rounds: 
         left = new_left;
         let prime_rotation = PRIME_ROTATION_AMOUNTS[(permutor.count_ones() as usize + round) % 31];
         let permuted_permutor = permutor.rotate_left(prime_rotation);
-        permutor ^= shift_stripe(permutor, permuted_permutor);
+        permutor = shift_stripe(permutor, permuted_permutor);
     }
     (left, right)
 }
 
+fn shift_stripe_simple(input: u128, mut permutor: u128, rounds: usize) -> u128 {
+    let (output, _) = shift_stripe_simple_feedback(input, permutor, rounds);
+    output
+}
+
+fn shift_stripe_simple_feedback(input: u128, mut permutor: u128, rounds: usize) -> (u128, u128) {
+    let mut output = input;
+    for round in 0..rounds {
+        output = shift_stripe(output, permutor);
+        let prime_rotation = PRIME_ROTATION_AMOUNTS[(permutor.count_ones() as usize + round) % 31];
+        let permuted_permutor = permutor.rotate_left(prime_rotation);
+        permutor = shift_stripe(permutor, permuted_permutor);
+    }
+    (output, permutor)
+}
+
 #[derive(Copy, Clone)]
 struct ShiftStripeFeistelRngCore {
+    permutor: u128,
+    counter: u128,
+}
+
+#[derive(Copy, Clone)]
+struct ShiftStripeSimpleRngCore {
     permutor: u128,
     counter: u128,
 }
@@ -106,6 +128,35 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
     }
 }
 
+impl BlockRngCore for ShiftStripeSimpleRngCore {
+    type Item = u64;
+    type Results = [u64; 1];
+
+    fn generate(&mut self, results: &mut Self::Results) {
+        let result128 = shift_stripe_simple(self.counter, self.permutor, SIMPLE_ROUNDS_TO_DIFFUSE);
+        self.counter = self.counter.wrapping_add(1);
+        results[0] = (result128 >> 64) as u64 ^ (result128 & (u64::MAX as u128)) as u64;
+    }
+}
+
+#[derive(Copy, Clone)]
+struct ShiftStripeFeedbackRngCore {
+    permutor: u128,
+    counter: u128,
+}
+
+impl BlockRngCore for ShiftStripeFeedbackRngCore {
+    type Item = u64;
+    type Results = [u64; 1];
+
+    fn generate(&mut self, results: &mut Self::Results) {
+        let (result128, permuted_permutor) = shift_stripe_simple_feedback(self.counter, self.permutor, SIMPLE_ROUNDS_TO_DIFFUSE);
+        self.counter = self.counter.wrapping_add(1);
+        self.permutor ^= permuted_permutor;
+        results[0] = (result128 >> 64) as u64 ^ (result128 & (u64::MAX as u128)) as u64;
+    }
+}
+
 impl ShiftStripeFeistelRngCore {
     fn new(seed_bytes: [u8; 32]) -> ShiftStripeFeistelRngCore {
         let permutor = u128::from_be_bytes(seed_bytes[0..16].try_into().unwrap());
@@ -116,6 +167,22 @@ impl ShiftStripeFeistelRngCore {
     }
 
     fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeFeistelRngCore {
+        let mut seed_bytes = [0u8; 32];
+        rng.fill_bytes(&mut seed_bytes);
+        Self::new(seed_bytes.into())
+    }
+}
+
+impl ShiftStripeSimpleRngCore {
+    fn new(seed_bytes: [u8; 32]) -> ShiftStripeSimpleRngCore {
+        let permutor = u128::from_be_bytes(seed_bytes[0..16].try_into().unwrap());
+        let counter = u128::from_be_bytes(seed_bytes[16..32].try_into().unwrap());
+        ShiftStripeSimpleRngCore {
+            permutor, counter
+        }
+    }
+
+    fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSimpleRngCore {
         let mut seed_bytes = [0u8; 32];
         rng.fill_bytes(&mut seed_bytes);
         Self::new(seed_bytes.into())
@@ -168,76 +235,94 @@ impl Hasher for ShiftStripeSponge {
 
 #[test]
 fn test_hashing_random_key() {
-    let mut hashes = Vec::with_capacity(u8::MAX as usize + 1);
-    for byte in 0..=u8::MAX {
-        let mut hasher = ShiftStripeSponge::new_random(&mut thread_rng());
-        hasher.write(&[byte]);
+    test_hashing(thread_rng().gen())
+}
+
+#[cfg(test)]
+use std::ops::Shl;
+
+#[cfg(test)]
+fn test_hashing(key: u128) {
+    let expected_count = 1usize.shl(16) + 1usize.shl(8) + 1usize;
+    let mut hashes = Vec::with_capacity(expected_count);
+    let mut hasher = ShiftStripeSponge::new(key);
+    hashes.push(hasher.finish()); // Hash of empty string
+    for byte1 in 0..=u8::MAX {
+        let mut hasher = ShiftStripeSponge::new(key);
+        hasher.write(&[byte1]);
         hashes.push(hasher.finish());
+        for byte2 in 0..=u8::MAX {
+            let mut hasher = ShiftStripeSponge::new(key);
+            hasher.write(&[byte1, byte2]);
+            hashes.push(hasher.finish());
+        }
     }
     hashes.sort();
     hashes.dedup();
-    assert_eq!(hashes.len(), u8::MAX as usize + 1);
+    assert_eq!(hashes.len(), expected_count);
 }
 
 #[test]
 fn test_hashing_zero_key() {
-    let mut hashes = Vec::with_capacity(u8::MAX as usize + 1);
-    for byte in 0..=u8::MAX {
-        let mut hasher = ShiftStripeSponge::new(0);
-        hasher.write(&[byte]);
-        hashes.push(hasher.finish());
+    test_hashing(0);
+}
+
+#[test]
+fn test_diffusion_small_keys() {
+    for permutor_short in -128..128 {
+        for i in -128..128 {
+            assert_eq!(vec![] as Vec<String>, check_diffusion_around(permutor_short, i));
+        }
     }
-    hashes.sort();
-    hashes.dedup();
-    assert_eq!(hashes.len(), u8::MAX as usize + 1);
 }
 
 #[test]
-fn test_diffusion_small_keys() -> Result<(), String> {
-    (-128i128..128).into_par_iter()
-        .map(|permutor_short| {
-            for i in -128..128 {
-                check_diffusion_around(permutor_short, i)?;
-            }
-        })
-        .join_all()?
+fn test_diffusion_small_keys_simple() {
+    for permutor_short in -128..128 {
+        for i in -128..128 {
+            assert_eq!(vec![] as Vec<String>, check_diffusion_simple(permutor_short, i - 1, i));
+        }
+    }
 }
 
+
 #[test]
-fn test_diffusion_random_key() -> Result<(), String> {
+fn test_diffusion_random_key() {
     let permutor_short = random_u128(&mut thread_rng()) as i128;
     for i in -128..128 {
-        check_diffusion_around(permutor_short, i)?;
+        assert_eq!(vec![] as Vec<String>, check_diffusion_around(permutor_short, i));
     }
-    Ok(())
 }
 
-fn check_diffusion_around(permutor_short: i128, i: i128) -> Result<(), String> {
-    check_diffusion(permutor_short, 0, i - 1, 0, i)?;
-    check_diffusion(permutor_short, i - 1, 0, i, 0)?;
-    check_diffusion(permutor_short, i - 1, i, i, i)?;
-    check_diffusion(permutor_short, i, i - 1, i, i)?;
-    check_diffusion(permutor_short, i - 1, i - 1, i, i)?;
-    check_diffusion(permutor_short, i - 1, i, i, i)?;
-    Ok(())
+fn check_diffusion_around(permutor_short: i128, i: i128) -> Vec<String> {
+    let mut warnings = check_diffusion(permutor_short, 0, i - 1, 0, i);
+    warnings.extend_from_slice(&check_diffusion(permutor_short, i - 1, 0, i, 0));
+
+    warnings.extend_from_slice(&check_diffusion(permutor_short, i - 1, i, i, i));
+    warnings.extend_from_slice(&check_diffusion(permutor_short, i, i - 1, i, i));
+    warnings.extend_from_slice(&check_diffusion(permutor_short, i - 1, i - 1, i, i));
+    warnings.extend_from_slice(&check_diffusion(permutor_short, i - 1, i, i, i));
+    warnings
 }
 
-fn main() -> io::Result<()> {
-    let mut rng = BlockRng64::new(ShiftStripeFeistelRngCore::new_random(&mut thread_rng()));
+fn main() {
+    let mut rng = BlockRng64::new(ShiftStripeFeedbackRngCore::new([0; 32]));
     let mut stdout = std::io::stdout();
+    let mut write_result = Ok(());
     let mut out_buffer = [0u8; 1024];
-    loop {
+    while write_result.is_ok() {
         rng.fill_bytes(&mut out_buffer);
-        stdout.write_all(&out_buffer)?;
+        write_result = stdout.write_all(&out_buffer);
     }
 }
 
-fn check_diffusion(permutor_short: i128, previn1: i128, previn2: i128, thisin1: i128, thisin2: i128) -> Result<(), String> {
-    let permutor = 0u128.wrapping_add_signed(permutor_short);
-    let previn1_unsigned = 0u128.wrapping_add_signed(previn1);
-    let previn2_unsigned = 0u128.wrapping_add_signed(previn2);
-    let thisin1_unsigned = 0u128.wrapping_add_signed(thisin1);
-    let thisin2_unsigned = 0u128.wrapping_add_signed(thisin2);
+fn check_diffusion(permutor_signed: i128, previn1: i128, previn2: i128, thisin1: i128, thisin2: i128) -> Vec<String> {
+    let mut warnings = Vec::new();
+    let permutor = permutor_signed as u128;
+    let previn1_unsigned = previn1 as u128;
+    let previn2_unsigned = previn2 as u128;
+    let thisin1_unsigned = thisin1 as u128;
+    let thisin2_unsigned = thisin2 as u128;
     let (prev1, prev2) = shift_stripe_feistel(previn1_unsigned, previn2_unsigned, permutor, FIESTEL_ROUNDS_TO_DIFFUSE);
     let (this1, this2) = shift_stripe_feistel(thisin1_unsigned, thisin2_unsigned, permutor, FIESTEL_ROUNDS_TO_DIFFUSE);
     let xor1 = this1 ^ prev1;
@@ -248,9 +333,23 @@ fn check_diffusion(permutor_short: i128, previn1: i128, previn2: i128, thisin1: 
         || bits_difference_2 < 16 || bits_difference_2 > 112
         || (bits_difference_1 + bits_difference_2) < 64
         || (bits_difference_1 + bits_difference_2) > 192 {
-        return Err(format!("Warning: for permutor {} and inputs ({}, {}) and ({}, {}), outputs ({:#034x}, {:#034x}) and ({:#034x}, {:#034x}) differ by ({:#034x}, {:#034x})",
-                 permutor_short, previn1, previn2, thisin1, thisin2, prev1, prev2, this1, this2, xor1, xor2
+        warnings.push(format!("Warning: for permutor {} and inputs ({}, {}) and ({}, {}), outputs ({:#034x}, {:#034x}) and ({:#034x}, {:#034x}) differ by ({:#034x}, {:#034x})",
+                              permutor_signed, previn1, previn2, thisin1, thisin2, prev1, prev2, this1, this2, xor1, xor2
         ));
     }
-    Ok(())
+    warnings
+}
+
+fn check_diffusion_simple(permutor_signed: i128, previn: i128, thisin: i128) -> Vec<String> {
+    let mut warnings = Vec::new();
+    let permutor = permutor_signed as u128;
+    let prev = shift_stripe_simple(previn as u128, permutor, SIMPLE_ROUNDS_TO_DIFFUSE);
+    let this = shift_stripe_simple(thisin as u128, permutor, SIMPLE_ROUNDS_TO_DIFFUSE);
+    let bits_difference = (prev ^ this).count_ones();
+    if bits_difference < 16 || bits_difference > 112 {
+        warnings.push(format!("Warning: for permutor {} and inputs {} and {}, outputs {:#034x} and {:#034x} differ by {} bits",
+                              permutor_signed, previn, thisin, prev, this, bits_difference
+        ));
+    }
+    warnings
 }
