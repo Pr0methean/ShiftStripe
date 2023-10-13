@@ -148,7 +148,7 @@ struct ShiftStripeFeedbackRngCore {
 
 #[inline]
 const fn compress_u128_to_u64(input: u128) -> u64 {
-    (input >> 64) as u64 ^ (input as u64)
+    (input >> 64) as u64 ^ (input as u64).rotate_right(31)
 }
 
 impl BlockRngCore for ShiftStripeFeedbackRngCore {
