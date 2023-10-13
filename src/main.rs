@@ -28,6 +28,7 @@ pub const STRIPE_MASKS: [u128; 8] = [
 
 pub const SIMPLE_ROUNDS_TO_DIFFUSE: usize = 256;
 pub const FIESTEL_ROUNDS_TO_DIFFUSE: usize = 16;
+pub const FEEDBACK_ROUNDS_TO_DIFFUSE: usize = 16;
 
 pub fn shift_stripe(input: u128, permutor: u128) -> u128 {
     let mut out = input;
@@ -150,7 +151,7 @@ impl BlockRngCore for ShiftStripeFeedbackRngCore {
     type Results = [u64; 1];
 
     fn generate(&mut self, results: &mut Self::Results) {
-        let (result128, permuted_permutor) = shift_stripe_simple_feedback(self.counter, self.permutor, SIMPLE_ROUNDS_TO_DIFFUSE);
+        let (result128, permuted_permutor) = shift_stripe_simple_feedback(self.counter, self.permutor, FEEDBACK_ROUNDS_TO_DIFFUSE);
         self.counter = self.counter.wrapping_add(1);
         self.permutor ^= permuted_permutor;
         results[0] = (result128 >> 64) as u64 ^ (result128 & (u64::MAX as u128)) as u64;
