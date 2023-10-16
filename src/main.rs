@@ -8,7 +8,7 @@ use std::iter;
 use std::iter::repeat;
 use std::mem::size_of;
 use std::ops::{BitXor};
-use rand::{Rng, RngCore, thread_rng};
+use rand::{random, Rng, RngCore, thread_rng};
 use rand_core::block::{BlockRng64, BlockRngCore};
 use rayon::prelude::*;
 
@@ -226,7 +226,7 @@ fn test_hashing_zero_key() {
 
 #[test]
 fn test_hashing_random_key() {
-    test_hashing(thread_rng().gen())
+    test_hashing(random())
 }
 
 #[test]
