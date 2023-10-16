@@ -154,7 +154,7 @@ fn random_block<T: Rng>(rand: &mut T) -> Block {
 }
 
 fn compress_block_to_unit(block: &Block) -> Unit {
-    block.iter().fold(0, u64::bitxor)
+    block.iter().copied().fold(0, |x, y| shift_stripe(x, y, 0))
 }
 
 fn bytes_to_block<T: Iterator<Item=u8>>(bytes: T) -> Block {
