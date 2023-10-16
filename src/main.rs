@@ -1,11 +1,12 @@
 #![feature(array_chunks)]
 #![feature(iter_array_chunks)]
 
+use std::collections::{BTreeMap};
 use std::hash::Hasher;
 use std::io::Write;
 use std::iter::repeat;
 use std::mem::size_of;
-use std::ops::{BitXor, Shr};
+use std::ops::{BitXor};
 use rand::{Rng, RngCore, thread_rng};
 use rand_core::block::{BlockRng64, BlockRngCore};
 use rayon::prelude::*;
@@ -29,13 +30,23 @@ pub const STRIPE_MASKS: [Unit; 6] = [
     0xffffffff00000000
 ];
 
+pub const PRIME_ROTATION_AMOUNTS: [usize; 18] = [
+    2, 3, 5, 7,
+    11, 13, 17, 19,
+    23, 29, 31, 37,
+    41, 43, 47, 53,
+    59, 61
+];
+
 pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = 13;
 
-pub fn shift_stripe(input: Unit, permutor: Unit) -> Unit {
+pub fn shift_stripe(input: Unit, mut permutor: Unit, round: u32) -> Unit {
     let mut out = input;
-    for perm_byte in permutor.to_be_bytes() {
+    permutor = permutor.rotate_right((2 + round) as u32);
+    let mut permutor_bytes = permutor.to_be_bytes();
+    for perm_byte in permutor_bytes.into_iter() {
         out ^= STRIPE_MASKS[(perm_byte % 6) as usize];
-        out ^= out.rotate_right((perm_byte.shr(2) as usize % 8*size_of::<Unit>()) as u32).wrapping_add(META_PERMUTOR );
+        out ^= out.rotate_right(PRIME_ROTATION_AMOUNTS[(((perm_byte as u32 + round) / 6) % 18) as usize] as u32).wrapping_add(META_PERMUTOR );
     }
     out
 }
@@ -50,7 +61,7 @@ pub fn shift_stripe_update_key(key: &mut Block, round: u32) {
                 .wrapping_add(SECOND_META_PERMUTOR)
                 .rotate_right((round + unit_index as u32).count_ones() + 1)
                 .reverse_bits()
-        );
+        , 0);
     }
     *key = new_key;
 }
@@ -60,7 +71,7 @@ fn shift_stripe_feistel(mut left: Block, mut right: Block, mut permutor: Block, 
     for round in 0..rounds {
         for unit_index in 0..UNITS_PER_BLOCK {
             let new_left = right[unit_index];
-            let f = shift_stripe(right[unit_index], permutor[unit_index]);
+            let f = shift_stripe(right[unit_index], permutor[unit_index], round);
             right[unit_index] = left[unit_index] ^ f;
             left[unit_index] = new_left;
         }
@@ -96,7 +107,9 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
 
 #[inline]
 const fn compress_u128_to_u64(input: u128) -> u64 {
-    (input >> 64) as u64 ^ (input as u64).rotate_right(31)
+    let upper_word = (input >> 64) as u64;
+    let lower_word = input as u64;
+    upper_word.rotate_right(31) ^ lower_word
 }
 
 impl ShiftStripeFeistelRngCore {
@@ -117,6 +130,7 @@ impl ShiftStripeFeistelRngCore {
 
 struct ShiftStripeSponge {
     permutor: Block,
+    round_shift: u32,
     state: [u8; size_of::<Block>()]
 }
 
@@ -124,6 +138,7 @@ impl ShiftStripeSponge {
     fn new(key: Block) -> ShiftStripeSponge {
         ShiftStripeSponge {
             permutor: key,
+            round_shift: 0,
             state: [0; size_of::<Block>()]
         }
     }
@@ -163,50 +178,55 @@ impl Hasher for ShiftStripeSponge {
 
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes {
-            self.state.rotate_right(1);
-            self.state[0] ^= byte;
-            let mut state0 = Unit::from_be_bytes(&*self.state[0..size_of::<Unit>()]);
+            self.state.rotate_left(1);
+            self.state[self.state.len() - 1] ^= byte;
+            let mut state0 = Unit::from_be_bytes(self.state[0..size_of::<Unit>()].try_into().unwrap());
             state0 ^= shift_stripe(
                 bytes_to_unit(self.state[size_of::<Unit>()..2 * size_of::<Unit>()].iter().copied()),
                 bytes_to_unit(self.state[(self.state.len() - size_of::<Unit>())..].iter().copied())
+                    .wrapping_add(META_PERMUTOR),
+                0
             );
-            self.state[0..size_of::<Unit>()].copy_from_slice(&*state0[0].to_be_bytes());
+            self.state[0..size_of::<Unit>()].copy_from_slice(&state0.to_be_bytes());
         }
     }
 }
-
-#[test]
-fn test_hashing_random_key() {
-    test_hashing(thread_rng().gen())
-}
-
-#[cfg(test)]
-use std::ops::Shl;
 
 #[cfg(test)]
 fn test_hashing(key: Block) {
-    let expected_count = 1usize.shl(16) + 1usize.shl(8) + 1usize;
-    let mut hashes = Vec::with_capacity(expected_count);
+    let mut hashes = BTreeMap::new();
     let mut hasher = ShiftStripeSponge::new(key);
-    hashes.push(hasher.finish()); // Hash of empty string
+    let hash = hasher.finish(); // Hash of empty string
+    hashes.insert(hash, vec![]);
     for byte1 in 0..=u8::MAX {
         let mut hasher = ShiftStripeSponge::new(key);
         hasher.write(&[byte1]);
-        hashes.push(hasher.finish());
+        let hash = hasher.finish();
+        assert_eq!(None, hashes.get(&hash));
+        hashes.insert(hash, vec![byte1]);
         for byte2 in 0..=u8::MAX {
             let mut hasher = ShiftStripeSponge::new(key);
             hasher.write(&[byte1, byte2]);
-            hashes.push(hasher.finish());
+            let hash = hasher.finish();
+            assert_eq!(None, hashes.get(&hash));
+            hashes.insert(hash, vec![byte1, byte2]);
         }
     }
-    hashes.sort();
-    hashes.dedup();
-    assert_eq!(hashes.len(), expected_count);
+    let mut hash_reverses: Vec<_> = hashes.into_iter().collect();
+    hash_reverses.sort();
+    for (value, key) in hash_reverses.into_iter() {
+        println!("{:#018x} <- {:?}", value, key);
+    }
 }
 
 #[test]
 fn test_hashing_zero_key() {
     test_hashing(Block::default());
+}
+
+#[test]
+fn test_hashing_random_key() {
+    test_hashing(thread_rng().gen())
 }
 
 #[test]
