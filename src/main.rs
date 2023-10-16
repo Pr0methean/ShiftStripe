@@ -176,8 +176,7 @@ impl Hasher for ShiftStripeSponge {
     }
 
     fn write(&mut self, bytes: &[u8]) {
-        let bytes = bytes.into_iter().chain(iter::once(&0u8));
-        for byte in bytes.copied() {
+        for byte in bytes.iter().copied() {
             self.state.rotate_left(1);
             self.state[self.state.len() - 1] ^= byte;
             let mut state0 = Unit::from_be_bytes(self.state[0..size_of::<Unit>()].try_into().unwrap());
