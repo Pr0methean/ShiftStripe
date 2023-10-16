@@ -130,7 +130,6 @@ impl ShiftStripeFeistelRngCore {
 
 struct ShiftStripeSponge {
     permutor: Block,
-    round_shift: u32,
     state: [u8; size_of::<Block>()]
 }
 
@@ -138,7 +137,6 @@ impl ShiftStripeSponge {
     fn new(key: Block) -> ShiftStripeSponge {
         ShiftStripeSponge {
             permutor: key,
-            round_shift: 0,
             state: [0; size_of::<Block>()]
         }
     }
