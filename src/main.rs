@@ -4,13 +4,10 @@
 use std::collections::{BTreeMap};
 use std::hash::Hasher;
 use std::io::Write;
-use std::iter;
 use std::iter::repeat;
 use std::mem::size_of;
-use std::ops::{BitXor};
-use rand::{random, Rng, RngCore, thread_rng};
+use rand::{random, Rng, RngCore};
 use rand_core::block::{BlockRng64, BlockRngCore};
-use rayon::prelude::*;
 
 
 type Unit = u64;
