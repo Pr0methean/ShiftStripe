@@ -131,14 +131,14 @@ impl ShiftStripeFeistelRngCore {
 
 struct ShiftStripeSponge {
     permutor: Block,
-    state: [u8; size_of::<Block>()]
+    state: Block
 }
 
 impl ShiftStripeSponge {
     fn new(key: Block) -> ShiftStripeSponge {
         ShiftStripeSponge {
             permutor: key,
-            state: [0; size_of::<Block>()]
+            state: Block::default()
         }
     }
 
@@ -177,16 +177,15 @@ impl Hasher for ShiftStripeSponge {
 
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes.iter().copied() {
-            self.state.rotate_left(1);
-            self.state[self.state.len() - 1] ^= byte;
-            let mut state0 = Unit::from_be_bytes(self.state[0..size_of::<Unit>()].try_into().unwrap());
-            state0 ^= shift_stripe(
-                bytes_to_unit(self.state[size_of::<Unit>()..2 * size_of::<Unit>()].iter().copied()),
-                bytes_to_unit(self.state[(self.state.len() - size_of::<Unit>())..].iter().copied())
-                    .wrapping_add(META_PERMUTOR),
+            let mut state_bytes: [u8] = self.state.flat_map(Unit::to_be_bytes).collect();
+            state_bytes.rotate_left(1);
+            state_bytes[size_of::<Block>() - 1] ^= byte;
+            self.state.copy_from_slice(state_bytes.flat_map(Unit::from_be_bytes).collect());
+            self.state[0] ^= shift_stripe(
+                self.state[1],
+                self.state[UNITS_PER_BLOCK - 1].wrapping_add(META_PERMUTOR),
                 0
             );
-            self.state[0..size_of::<Unit>()].copy_from_slice(&state0.to_be_bytes());
         }
     }
 }
