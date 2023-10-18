@@ -48,7 +48,7 @@ pub fn shift_stripe(input: Unit, mut permutor: Unit, round: u32) -> Unit {
     out
 }
 
-pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = 4;
+pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = UNITS_PER_BLOCK as u32;
 
 pub fn shift_stripe_update_key(key: &mut Block, round: u32) {
     let mut new_key = Block::default();
