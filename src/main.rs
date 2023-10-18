@@ -12,7 +12,7 @@ use rand_core::block::{BlockRng64, BlockRngCore};
 
 
 type Unit = u64;
-pub const UNITS_PER_BLOCK: usize = 4;
+pub const UNITS_PER_BLOCK: usize = 2;
 type Block = [Unit; UNITS_PER_BLOCK];
 
 // (pi * 1u64.shl(62)) computed at high precision and rounded down
