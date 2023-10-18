@@ -4,9 +4,10 @@
 use std::collections::{BTreeMap};
 use std::hash::Hasher;
 use std::io::Write;
+use std::iter;
 use std::iter::repeat;
 use std::mem::size_of;
-use rand::{random, Rng, RngCore};
+use rand::{random, Rng, RngCore, thread_rng};
 use rand_core::block::{BlockRng64, BlockRngCore};
 
 
@@ -36,8 +37,6 @@ pub const PRIME_ROTATION_AMOUNTS: [usize; 18] = [
     59, 61
 ];
 
-pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = 13;
-
 pub fn shift_stripe(input: Unit, mut permutor: Unit, round: u32) -> Unit {
     let mut out = input;
     permutor = permutor.rotate_right((2 + round) as u32);
@@ -48,6 +47,8 @@ pub fn shift_stripe(input: Unit, mut permutor: Unit, round: u32) -> Unit {
     }
     out
 }
+
+pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = 4;
 
 pub fn shift_stripe_update_key(key: &mut Block, round: u32) {
     let mut new_key = Block::default();
@@ -60,6 +61,9 @@ pub fn shift_stripe_update_key(key: &mut Block, round: u32) {
                 .rotate_right((round + unit_index as u32).count_ones() + 1)
                 .reverse_bits()
         , 0);
+        if shift_stripe(second_unit, META_PERMUTOR, unit_index as u32) & 1 != 0 {
+            new_key[unit_index] = new_key[unit_index].reverse_bits();
+        }
     }
     *key = new_key;
 }
@@ -126,6 +130,14 @@ impl ShiftStripeFeistelRngCore {
     }
 }
 
+
+fn random_block<T: Rng>(rand: &mut T) -> Block {
+    let mut block = Block::default();
+    rand.fill(&mut block);
+    block
+}
+
+
 struct ShiftStripeSponge {
     permutor: Block,
     state: Block
@@ -140,14 +152,11 @@ impl ShiftStripeSponge {
     }
 
     fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge {
-        Self::new(random_block(rng))
+        ShiftStripeSponge {
+            permutor: random_block(rng),
+            state: random_block(rng)
+        }
     }
-}
-
-fn random_block<T: Rng>(rand: &mut T) -> Block {
-    let mut block = Block::default();
-    rand.fill(&mut block);
-    block
 }
 
 fn compress_block_to_unit(block: &Block) -> Unit {
@@ -169,15 +178,15 @@ fn bytes_to_unit<T: Iterator<Item=u8>>(bytes: T) -> Unit {
 
 impl Hasher for ShiftStripeSponge {
     fn finish(&self) -> u64 {
-        compress_block_to_unit(&bytes_to_block(self.state.iter().copied()))
+        compress_block_to_unit(&self.state)
     }
 
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes.iter().copied() {
-            let mut state_bytes: [u8] = self.state.flat_map(Unit::to_be_bytes).collect();
-            state_bytes.rotate_left(1);
+            let mut state_bytes = block_to_bytes(self.state);
+            state_bytes.rotate_right(1);
             state_bytes[size_of::<Block>() - 1] ^= byte;
-            self.state.copy_from_slice(state_bytes.flat_map(Unit::from_be_bytes).collect());
+            self.state.copy_from_slice(&bytes_to_block(state_bytes.into_iter()));
             self.state[0] ^= shift_stripe(
                 self.state[1],
                 self.state[UNITS_PER_BLOCK - 1].wrapping_add(META_PERMUTOR),
@@ -188,40 +197,53 @@ impl Hasher for ShiftStripeSponge {
 }
 
 #[cfg(test)]
-fn test_hashing(key: Block) {
+fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: Block, inputs: T) {
     let mut hashes = BTreeMap::new();
-    let mut hasher = ShiftStripeSponge::new(key);
-    let hash = hasher.finish(); // Hash of empty string
-    hashes.insert(hash, vec![]);
-    for byte1 in 0..=u8::MAX {
+    for input in inputs {
         let mut hasher = ShiftStripeSponge::new(key);
-        hasher.write(&[byte1]);
+        hasher.write(&input);
         let hash = hasher.finish();
-        assert_eq!(None, hashes.get(&hash));
-        hashes.insert(hash, vec![byte1]);
-        for byte2 in 0..=u8::MAX {
-            let mut hasher = ShiftStripeSponge::new(key);
-            hasher.write(&[byte1, byte2]);
-            let hash = hasher.finish();
-            assert_eq!(None, hashes.get(&hash));
-            hashes.insert(hash, vec![byte1, byte2]);
-        }
+        hashes.insert(hash, input);
     }
     let mut hash_reverses: Vec<_> = hashes.into_iter().collect();
     hash_reverses.sort();
     for (value, key) in hash_reverses.into_iter() {
-        println!("{:#018x} <- {:?}", value, key);
+        print!("{:#018x} <- ", value);
+        for byte in key.into_iter() {
+            print!("{:02x}", byte);
+        }
+        println!();
     }
 }
 
 #[test]
 fn test_hashing_zero_key() {
-    test_hashing(Block::default());
+    test_hashing(Block::default(),
+    iter::once([].into())
+        .chain((0..=u8::MAX).map(|x| [x].into()))
+        .chain((0..=u8::MAX).flat_map(|x| (0..=u8::MAX).map(move |y| [x, y].into())))
+    );
+}
+
+#[test]
+fn test_hashing_random_inputs() {
+    const LEN_PER_INPUT: usize = 16;
+    const INPUT_COUNT: usize = 100_000;
+    let mut inputs = [0u8; LEN_PER_INPUT * INPUT_COUNT];
+    thread_rng().fill(inputs.as_mut());
+    let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
+    inputs.sort();
+    inputs.dedup();
+    test_hashing(Block::default(),
+                 inputs.into_iter());
 }
 
 #[test]
 fn test_hashing_random_key() {
-    test_hashing(random())
+    test_hashing(random(),
+                 iter::once([].into())
+                     .chain((0..=u8::MAX).map(|x| [x].into()))
+                     .chain((0..=u8::MAX).flat_map(|x| (0..=u8::MAX).map(move |y| [x, y].into()))))
 }
 
 #[test]
@@ -231,10 +253,6 @@ fn test_diffusion_small_keys() {
             assert_eq!(vec![] as Vec<String>, check_diffusion_around(permutor_short, i));
         }
     }
-}
-
-fn format_block(block: &Block) -> String {
-    block.iter().map(|x| format!("{:#018x}", x)).collect::<Vec<_>>().join(",")
 }
 
 fn int_to_block(input: i128) -> Block {
@@ -248,6 +266,7 @@ fn int_to_block(input: i128) -> Block {
     bytes_to_block(bytes.into_iter())
 }
 
+#[cfg(test)]
 fn xor_blocks(block1: &Block, block2: &Block) -> Block {
     let xored_vec: Vec<_> = block1.iter().zip(block2.iter()).map(|(x, y)| x ^ y).collect();
     xored_vec.try_into().unwrap()
@@ -299,12 +318,12 @@ fn check_diffusion(permutor_int: i128, previn1: i128, previn2: i128, thisin1: i1
         || bits_difference_2 < 16 || bits_difference_2 > bits_in_block - 16
         || (bits_difference_1 + bits_difference_2) < 64
         || (bits_difference_1 + bits_difference_2) > (2 * bits_in_block) - 64 {
-        warnings.push(format!("Warning: for permutor {} and inputs ({}, {}) and ({}, {}), outputs ({}, {}) and ({}, {}) differ by ({}, {})",
+        warnings.push(format!("Warning: for permutor {} and inputs ({}, {}) and ({}, {}), outputs ({:?}, {:?}) and ({:?}, {:?}) differ by ({:?}, {:?})",
                               permutor_int, previn1, previn2, thisin1, thisin2,
-                              format_block(&prev1), format_block(&prev2),
-                              format_block(&this1), format_block(&this2),
-                              format_block(&xor1), format_block(&xor2)
-        ));
+                              &prev1, &prev2,
+                              &this1, &this2,
+                              &xor1, &xor2)
+        );
     }
     warnings
 }
