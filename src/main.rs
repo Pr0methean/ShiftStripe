@@ -48,7 +48,7 @@ pub fn shift_stripe(input: Unit, mut permutor: Unit, round: u32) -> Unit {
     out
 }
 
-pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = UNITS_PER_BLOCK as u32;
+pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = 4;
 
 pub fn shift_stripe_update_key(key: &mut Block, round: u32) {
     let mut new_key = Block::default();
@@ -59,7 +59,6 @@ pub fn shift_stripe_update_key(key: &mut Block, round: u32) {
             key[unit_index]
                 .wrapping_add(SECOND_META_PERMUTOR)
                 .rotate_right((round + unit_index as u32).count_ones() + 1)
-                .reverse_bits()
         , 0);
         if shift_stripe(second_unit, META_PERMUTOR, unit_index as u32) & 1 != 0 {
             new_key[unit_index] = new_key[unit_index].reverse_bits();
@@ -207,13 +206,30 @@ fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: Block, inputs: T) {
     }
     let mut hash_reverses: Vec<_> = hashes.into_iter().collect();
     hash_reverses.sort();
-    for (value, key) in hash_reverses.into_iter() {
-        print!("{:#018x} <- ", value);
-        for byte in key.into_iter() {
-            print!("{:02x}", byte);
+    let mut byte_frequencies = [[0u32; u8::MAX as usize + 1]; size_of::<Block>()];
+    for (value, key) in hash_reverses.iter() {
+        //print!("{:#018x} <- ", value);
+        for (index, byte) in key.iter().copied().enumerate() {
+            //print!("{:02x}", byte);
+            byte_frequencies[index][byte as usize] += 1;
         }
-        println!();
+        //println!();
     }
+    let mut low_p_values = 0;
+    for (index, byte_frequencies) in byte_frequencies.into_iter().enumerate() {
+        if byte_frequencies.iter().copied().any(|x| x != byte_frequencies[0]) {
+            let (stat, p) = rv::misc::x2_test(byte_frequencies.as_slice(),
+                                              &[1.0/((u8::MAX as usize + 1) as f64); u8::MAX as usize + 1]);
+            println!("Byte distribution for index {}: stat {}, p {:1.4}", index, stat, p);
+            assert!(p >= 0.001, "p < .001; raw distribution: {:?}", byte_frequencies);
+            if p < 0.05 {
+                low_p_values += 1;
+            }
+        } else {
+            println!("Bytes for index {} are equally distributed", index);
+        }
+    }
+    assert!(low_p_values <= size_of::<Block>() / 4, "Too many low p values");
 }
 
 #[test]
@@ -228,7 +244,7 @@ fn test_hashing_zero_key() {
 #[test]
 fn test_hashing_random_inputs() {
     const LEN_PER_INPUT: usize = 16;
-    const INPUT_COUNT: usize = 100_000;
+    const INPUT_COUNT: usize = 1 << 16;
     let mut inputs = [0u8; LEN_PER_INPUT * INPUT_COUNT];
     thread_rng().fill(inputs.as_mut());
     let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
