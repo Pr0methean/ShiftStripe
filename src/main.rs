@@ -62,7 +62,7 @@ fn shift_stripe_feistel(mut left: Block, mut right: Block, mut permutor: Block, 
             let f = shift_stripe(right[unit_index], permutor[unit_index], round);
             right[unit_index] = left[unit_index] ^ f;
             let new_permutor = shift_stripe(permutor[unit_index], left[
-                ((unit_index + WORDS_PER_BLOCK /2) % WORDS_PER_BLOCK) as usize], u32::MAX - round);
+                (unit_index + WORDS_PER_BLOCK / 2) % WORDS_PER_BLOCK], u32::MAX - round);
             permutor[unit_index] ^= new_permutor;
         }
         left = new_left;
