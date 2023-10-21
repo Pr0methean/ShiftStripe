@@ -247,6 +247,21 @@ fn test_hashing_random_inputs() {
 }
 
 #[test]
+
+fn test_hashing_random_inputs_and_previously_detected_weak_key() {
+    const WEAK_KEY: [Word; 2] = [0xa44c159928a08f85, 0x728389f302d7ae4b];
+    const LEN_PER_INPUT: usize = size_of::<Block>();
+    const INPUT_COUNT: usize = 1 << 16;
+    let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
+    thread_rng().fill(inputs.as_mut_slice());
+    let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
+    inputs.sort();
+    inputs.dedup();
+    test_hashing(WEAK_KEY,
+                 inputs.into_iter());
+}
+
+#[test]
 fn test_hashing_random_inputs_and_random_key() {
     const LEN_PER_INPUT: usize = size_of::<Block>();
     const INPUT_COUNT: usize = 1 << 16;
