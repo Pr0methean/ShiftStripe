@@ -169,19 +169,23 @@ impl Hasher for ShiftStripeSponge {
 
 #[cfg(test)]
 fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: Block, inputs: T) {
-    let mut hashes = BTreeMap::new();
+    let mut hash_reverses = BTreeMap::new();
     for input in inputs {
         let mut hasher = ShiftStripeSponge::new(key);
         hasher.write(&input);
         let hash = hasher.finish();
-        hashes.insert(hash, input);
+        hash_reverses.insert(hash, input);
     }
-    let mut hash_reverses: Vec<_> = hashes.into_iter().collect();
+    let mut hash_reverses: Vec<_> = hash_reverses.into_iter().collect();
     hash_reverses.sort();
+    let mut hash_mods: Vec<_> = PRIME_ROTATION_AMOUNTS.iter().map(|x| vec![0u32; *x]).collect();
     let mut byte_frequencies = [[0u32; u8::MAX as usize + 1]; size_of::<Block>()];
-    for (_, key) in hash_reverses.iter() {
+    for (value, key) in hash_reverses.iter() {
         for (index, byte) in key.iter().copied().enumerate() {
             byte_frequencies[index][byte as usize] += 1;
+        }
+        for (index, prime) in PRIME_ROTATION_AMOUNTS.iter().enumerate() {
+            hash_mods[index][(*value % (*prime as u64)) as usize] += 1;
         }
     }
     let mut low_p_values = 0;
@@ -198,7 +202,22 @@ fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: Block, inputs: T) {
             println!("Bytes for index {} are equally distributed", index);
         }
     }
-    assert!(low_p_values <= size_of::<Block>() / 4, "Too many low p values");
+    for (index, prime) in PRIME_ROTATION_AMOUNTS.iter().enumerate() {
+        let count_per_mod = (Word::MAX as u128 + 1) / (*prime as u128);
+        let leftover = (Word::MAX as u128 + 1) - *prime as u128 * count_per_mod as u128;
+        let prob_per_mod = (count_per_mod as f64) / ((Word::MAX as u128 + 1) as f64);
+        let prob_per_mod_with_left = (count_per_mod + 1) as f64 / ((Word::MAX as u128 + 1) as f64);
+        let mut probabilities: Vec<_> = repeat(prob_per_mod).take(*prime).collect();
+        probabilities[0..(leftover as usize)].fill(prob_per_mod_with_left);
+        let (stat, p) = rv::misc::x2_test(&hash_mods[index], &probabilities);
+        println!("Modulo-{} distribution: stat {}, p {:1.4}", prime, stat, p);
+        assert!(p >= 0.001, "p < .001; raw distribution: {:?}", hash_mods[index]);
+        if p < 0.05 {
+            low_p_values += 1;
+        }
+    }
+    assert!(low_p_values <= (size_of::<Block>() + PRIME_ROTATION_AMOUNTS.len()) / 4,
+            "Too many low p values");
 }
 
 #[test]
