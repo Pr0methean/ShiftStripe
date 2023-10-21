@@ -13,7 +13,6 @@ use rand_core::block::{BlockRng64, BlockRngCore};
 
 type Word = u64;
 
-// Must be even.
 pub const WORDS_PER_BLOCK: usize = 2;
 type Block = [Word; WORDS_PER_BLOCK];
 
