@@ -11,16 +11,18 @@ use rand::{random, Rng, RngCore, thread_rng};
 use rand_core::block::{BlockRng64, BlockRngCore};
 
 
-type Unit = u64;
-pub const UNITS_PER_BLOCK: usize = 2;
-type Block = [Unit; UNITS_PER_BLOCK];
+type Word = u64;
+
+// Must be even.
+pub const WORDS_PER_BLOCK: usize = 2;
+type Block = [Word; WORDS_PER_BLOCK];
 
 // (pi * 1u64.shl(62)) computed at high precision and rounded down
-pub const META_PERMUTOR: Unit = 0xc90fdaa2_2168c234;
+pub const META_PERMUTOR: Word = 0xc90fdaa2_2168c234;
 // more bits of pi
-pub const SECOND_META_PERMUTOR: Unit = 0xc4c6628b_80dc1cd1;
+pub const SECOND_META_PERMUTOR: Word = 0xc4c6628b_80dc1cd1;
 
-pub const STRIPE_MASKS: [Unit; 6] = [
+pub const STRIPE_MASKS: [Word; 6] = [
     0xaaaaaaaaaaaaaaaa,
     0xcccccccccccccccc,
     0xf0f0f0f0f0f0f0f0,
@@ -37,49 +39,33 @@ pub const PRIME_ROTATION_AMOUNTS: [usize; 18] = [
     59, 61
 ];
 
-pub fn shift_stripe(input: Unit, mut permutor: Unit, round: u32) -> Unit {
+pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
     let mut out = input;
-    permutor = permutor.rotate_right((2 + round) as u32);
-    let mut permutor_bytes = permutor.to_be_bytes();
+    permutor = permutor.rotate_right(round.wrapping_add(2));
+    let permutor_bytes = permutor.to_be_bytes();
     for perm_byte in permutor_bytes.into_iter() {
+        let rotation_selector = (round as u64 + perm_byte as u64) / 6;
         out ^= STRIPE_MASKS[(perm_byte % 6) as usize];
-        out ^= out.rotate_right(PRIME_ROTATION_AMOUNTS[(((perm_byte as u32 + round) / 6) % 18) as usize] as u32).wrapping_add(META_PERMUTOR );
+        out ^= out.rotate_right(PRIME_ROTATION_AMOUNTS[(rotation_selector % 18) as usize] as u32)
+            .wrapping_add(META_PERMUTOR );
     }
     out
 }
 
-pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = 4;
-
-pub fn shift_stripe_update_key(key: &mut Block, round: u32) {
-    let mut new_key = Block::default();
-    for unit_index in 0..UNITS_PER_BLOCK {
-        let second_unit = key[(unit_index + 1) % UNITS_PER_BLOCK];
-        new_key[unit_index] = shift_stripe(
-            second_unit,
-            key[unit_index]
-                .wrapping_add(SECOND_META_PERMUTOR)
-                .rotate_right((round + unit_index as u32).count_ones() + 1)
-        , 0);
-        if shift_stripe(second_unit, META_PERMUTOR, unit_index as u32) & 1 != 0 {
-            new_key[unit_index] = new_key[unit_index].reverse_bits();
-        }
-    }
-    *key = new_key;
-}
+pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = (WORDS_PER_BLOCK + 2) as u32;
 
 
 fn shift_stripe_feistel(mut left: Block, mut right: Block, mut permutor: Block, rounds: u32) -> (Block, Block) {
     for round in 0..rounds {
-        for unit_index in 0..UNITS_PER_BLOCK {
+        for unit_index in 0..WORDS_PER_BLOCK {
             let new_left = right[unit_index];
             let f = shift_stripe(right[unit_index], permutor[unit_index], round);
             right[unit_index] = left[unit_index] ^ f;
+            permutor[unit_index] = shift_stripe(permutor[unit_index], left[
+                ((unit_index + WORDS_PER_BLOCK /2) % WORDS_PER_BLOCK) as usize], u32::MAX - round);
             left[unit_index] = new_left;
         }
-        if round != rounds - 1 {
-            left.rotate_right(1);
-            shift_stripe_update_key(&mut permutor, round);
-        }
+        left.rotate_right(1);
     }
     (left, right)
 }
@@ -87,12 +73,12 @@ fn shift_stripe_feistel(mut left: Block, mut right: Block, mut permutor: Block, 
 #[derive(Copy, Clone)]
 struct ShiftStripeFeistelRngCore {
     permutor: Block,
-    counter: Unit,
+    counter: Word,
 }
 
 impl BlockRngCore for ShiftStripeFeistelRngCore {
-    type Item = Unit;
-    type Results = [Unit; 2];
+    type Item = Word;
+    type Results = [Word; 2 * WORDS_PER_BLOCK];
 
     fn generate(&mut self, results: &mut Self::Results) {
         let (result0, result1) = shift_stripe_feistel(
@@ -101,16 +87,9 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
             self.permutor,
             FEISTEL_ROUNDS_TO_DIFFUSE);
         self.counter = self.counter.wrapping_add(1);
-        results[0] = compress_block_to_unit(&result0);
-        results[1] = compress_block_to_unit(&result1);
+        results[0..WORDS_PER_BLOCK].copy_from_slice(&result0);
+        results[WORDS_PER_BLOCK..].copy_from_slice(&result1);
     }
-}
-
-#[inline]
-const fn compress_u128_to_u64(input: u128) -> u64 {
-    let upper_word = (input >> 64) as u64;
-    let lower_word = input as u64;
-    upper_word.rotate_right(31) ^ lower_word
 }
 
 impl ShiftStripeFeistelRngCore {
@@ -123,9 +102,7 @@ impl ShiftStripeFeistelRngCore {
     }
 
     fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeFeistelRngCore {
-        let mut seed_bytes = [0u8; 32];
-        rng.fill_bytes(&mut seed_bytes);
-        Self::new(bytes_to_block(seed_bytes.into_iter()))
+        Self::new(random_block(rng))
     }
 }
 
@@ -138,41 +115,36 @@ fn random_block<T: Rng>(rand: &mut T) -> Block {
 
 
 struct ShiftStripeSponge {
-    permutor: Block,
     state: Block
 }
 
 impl ShiftStripeSponge {
     fn new(key: Block) -> ShiftStripeSponge {
         ShiftStripeSponge {
-            permutor: key,
-            state: Block::default()
+            state: key
         }
     }
 
     fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge {
-        ShiftStripeSponge {
-            permutor: random_block(rng),
-            state: random_block(rng)
-        }
+        Self::new(random_block(rng))
     }
 }
 
-fn compress_block_to_unit(block: &Block) -> Unit {
+fn compress_block_to_unit(block: &Block) -> Word {
     block.iter().copied().fold(0, |x, y| shift_stripe(x, y, 0))
 }
 
 fn bytes_to_block<T: Iterator<Item=u8>>(bytes: T) -> Block {
-    bytes.into_iter().array_chunks().map(Unit::from_be_bytes).collect::<Vec<_>>().try_into().unwrap()
+    bytes.into_iter().array_chunks().map(Word::from_be_bytes).collect::<Vec<_>>().try_into().unwrap()
 }
 
 fn block_to_bytes(block: Block) -> [u8; size_of::<Block>()] {
-    let byte_vec: Vec<_> = block.iter().copied().flat_map(Unit::to_be_bytes).collect();
+    let byte_vec: Vec<_> = block.iter().copied().flat_map(Word::to_be_bytes).collect();
     byte_vec.try_into().unwrap()
 }
 
-fn bytes_to_unit<T: Iterator<Item=u8>>(bytes: T) -> Unit {
-    Unit::from_be_bytes(bytes.into_iter().collect::<Vec<_>>().try_into().unwrap())
+fn bytes_to_unit<T: Iterator<Item=u8>>(bytes: T) -> Word {
+    Word::from_be_bytes(bytes.into_iter().collect::<Vec<_>>().try_into().unwrap())
 }
 
 impl Hasher for ShiftStripeSponge {
@@ -188,7 +160,7 @@ impl Hasher for ShiftStripeSponge {
             self.state.copy_from_slice(&bytes_to_block(state_bytes.into_iter()));
             self.state[0] ^= shift_stripe(
                 self.state[1],
-                self.state[UNITS_PER_BLOCK - 1].wrapping_add(META_PERMUTOR),
+                self.state[WORDS_PER_BLOCK - 1].wrapping_add(META_PERMUTOR),
                 0
             );
         }
@@ -207,13 +179,10 @@ fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: Block, inputs: T) {
     let mut hash_reverses: Vec<_> = hashes.into_iter().collect();
     hash_reverses.sort();
     let mut byte_frequencies = [[0u32; u8::MAX as usize + 1]; size_of::<Block>()];
-    for (value, key) in hash_reverses.iter() {
-        //print!("{:#018x} <- ", value);
+    for (_, key) in hash_reverses.iter() {
         for (index, byte) in key.iter().copied().enumerate() {
-            //print!("{:02x}", byte);
             byte_frequencies[index][byte as usize] += 1;
         }
-        //println!();
     }
     let mut low_p_values = 0;
     for (index, byte_frequencies) in byte_frequencies.into_iter().enumerate() {
@@ -243,10 +212,10 @@ fn test_hashing_zero_key() {
 
 #[test]
 fn test_hashing_random_inputs() {
-    const LEN_PER_INPUT: usize = 16;
+    const LEN_PER_INPUT: usize = size_of::<Block>();
     const INPUT_COUNT: usize = 1 << 16;
-    let mut inputs = [0u8; LEN_PER_INPUT * INPUT_COUNT];
-    thread_rng().fill(inputs.as_mut());
+    let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
+    thread_rng().fill(inputs.as_mut_slice());
     let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
     inputs.sort();
     inputs.dedup();
@@ -301,7 +270,7 @@ fn check_diffusion_around(permutor: i128, i: i128) -> Vec<String> {
 }
 
 fn main() {
-    let mut rng = BlockRng64::new(ShiftStripeFeistelRngCore::new([0; UNITS_PER_BLOCK]));
+    let mut rng = BlockRng64::new(ShiftStripeFeistelRngCore::new([0; WORDS_PER_BLOCK]));
     let mut stdout = std::io::stdout();
     let mut write_result = Ok(());
     let mut out_buffer = [0u8; 1024];
