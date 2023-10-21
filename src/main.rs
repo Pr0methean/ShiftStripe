@@ -14,7 +14,7 @@ use rand_core::block::{BlockRng64, BlockRngCore};
 type Word = u64;
 
 // Must be even.
-pub const WORDS_PER_BLOCK: usize = 2;
+pub const WORDS_PER_BLOCK: usize = 3;
 type Block = [Word; WORDS_PER_BLOCK];
 
 // (pi * 1u64.shl(62)) computed at high precision and rounded down
@@ -61,8 +61,9 @@ fn shift_stripe_feistel(mut left: Block, mut right: Block, mut permutor: Block, 
             let new_left = right[unit_index];
             let f = shift_stripe(right[unit_index], permutor[unit_index], round);
             right[unit_index] = left[unit_index] ^ f;
-            permutor[unit_index] = shift_stripe(permutor[unit_index], left[
+            let new_permutor = shift_stripe(permutor[unit_index], left[
                 ((unit_index + WORDS_PER_BLOCK /2) % WORDS_PER_BLOCK) as usize], u32::MAX - round);
+            permutor[unit_index] ^= [new_permutor, new_permutor.reverse_bits()][(new_permutor & 1) as usize];
             left[unit_index] = new_left;
         }
         left.rotate_right(1);
@@ -169,6 +170,7 @@ impl Hasher for ShiftStripeSponge {
 
 #[cfg(test)]
 fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: Block, inputs: T) {
+    println!("Testing hashing with key {:?}", key);
     let mut hash_reverses = BTreeMap::new();
     for input in inputs {
         let mut hasher = ShiftStripeSponge::new(key);
@@ -209,6 +211,9 @@ fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: Block, inputs: T) {
         let prob_per_mod_with_left = (count_per_mod + 1) as f64 / ((Word::MAX as u128 + 1) as f64);
         let mut probabilities: Vec<_> = repeat(prob_per_mod).take(*prime).collect();
         probabilities[0..(leftover as usize)].fill(prob_per_mod_with_left);
+        let sum_of_probs: f64 = probabilities.iter().copied().sum();
+        debug_assert!(sum_of_probs >= 1.0 - 1.0e-9);
+        debug_assert!(sum_of_probs <= 1.0 + 1.0e-9);
         let (stat, p) = rv::misc::x2_test(&hash_mods[index], &probabilities);
         println!("Modulo-{} distribution: stat {}, p {:1.4}", prime, stat, p);
         assert!(p >= 0.001, "p < .001; raw distribution: {:?}", hash_mods[index]);
@@ -239,6 +244,19 @@ fn test_hashing_random_inputs() {
     inputs.sort();
     inputs.dedup();
     test_hashing(Block::default(),
+                 inputs.into_iter());
+}
+
+#[test]
+fn test_hashing_random_inputs_and_random_key() {
+    const LEN_PER_INPUT: usize = size_of::<Block>();
+    const INPUT_COUNT: usize = 1 << 16;
+    let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
+    thread_rng().fill(inputs.as_mut_slice());
+    let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
+    inputs.sort();
+    inputs.dedup();
+    test_hashing(random(),
                  inputs.into_iter());
 }
 
