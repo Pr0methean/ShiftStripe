@@ -13,10 +13,12 @@ use rand_core::block::{BlockRng64, BlockRngCore};
 
 type Word = u64;
 
+// Must be at least 2
 pub const WORDS_PER_BLOCK: usize = 2;
+
 type Block = [Word; WORDS_PER_BLOCK];
 
-// (pi * 1u64.shl(62)) computed at high precision and rounded down
+// (pi * 1.shl(62)) computed at high precision and rounded down
 pub const META_PERMUTOR: Word = 0xc90fdaa2_2168c234;
 // more bits of pi
 pub const SECOND_META_PERMUTOR: Word = 0xc4c6628b_80dc1cd1;
