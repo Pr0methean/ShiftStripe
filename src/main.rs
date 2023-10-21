@@ -14,7 +14,7 @@ use rand_core::block::{BlockRng64, BlockRngCore};
 type Word = u64;
 
 // Must be even.
-pub const WORDS_PER_BLOCK: usize = 3;
+pub const WORDS_PER_BLOCK: usize = 2;
 type Block = [Word; WORDS_PER_BLOCK];
 
 // (pi * 1u64.shl(62)) computed at high precision and rounded down
@@ -63,7 +63,7 @@ fn shift_stripe_feistel(mut left: Block, mut right: Block, mut permutor: Block, 
             right[unit_index] = left[unit_index] ^ f;
             let new_permutor = shift_stripe(permutor[unit_index], left[
                 ((unit_index + WORDS_PER_BLOCK /2) % WORDS_PER_BLOCK) as usize], u32::MAX - round);
-            permutor[unit_index] ^= [new_permutor, new_permutor.reverse_bits()][(new_permutor & 1) as usize];
+            permutor[unit_index] ^= new_permutor;
             left[unit_index] = new_left;
         }
         left.rotate_right(1);
