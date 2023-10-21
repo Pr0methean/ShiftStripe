@@ -57,15 +57,15 @@ pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = (WORDS_PER_BLOCK + 2) as u32;
 
 fn shift_stripe_feistel(mut left: Block, mut right: Block, mut permutor: Block, rounds: u32) -> (Block, Block) {
     for round in 0..rounds {
+        let new_left = right;
         for unit_index in 0..WORDS_PER_BLOCK {
-            let new_left = right[unit_index];
             let f = shift_stripe(right[unit_index], permutor[unit_index], round);
             right[unit_index] = left[unit_index] ^ f;
             let new_permutor = shift_stripe(permutor[unit_index], left[
                 ((unit_index + WORDS_PER_BLOCK /2) % WORDS_PER_BLOCK) as usize], u32::MAX - round);
             permutor[unit_index] ^= new_permutor;
-            left[unit_index] = new_left;
         }
+        left = new_left;
         left.rotate_right(1);
     }
     (left, right)
