@@ -73,7 +73,7 @@ fn shift_stripe_feistel(mut left: Block, mut right: Block, mut permutor: Block, 
 }
 
 #[derive(Copy, Clone)]
-struct ShiftStripeFeistelRngCore {
+pub struct ShiftStripeFeistelRngCore {
     permutor: Block,
     counter: Word,
 }
@@ -95,7 +95,7 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
 }
 
 impl ShiftStripeFeistelRngCore {
-    fn new(seed: Block) -> ShiftStripeFeistelRngCore {
+    pub fn new(seed: Block) -> ShiftStripeFeistelRngCore {
         let permutor = seed;
         let counter = compress_block_to_unit(&seed);
         ShiftStripeFeistelRngCore {
@@ -103,7 +103,7 @@ impl ShiftStripeFeistelRngCore {
         }
     }
 
-    fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeFeistelRngCore {
+    pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeFeistelRngCore {
         Self::new(random_block(rng))
     }
 }
@@ -116,18 +116,18 @@ fn random_block<T: Rng>(rand: &mut T) -> Block {
 }
 
 
-struct ShiftStripeSponge {
+pub struct ShiftStripeSponge {
     state: Block
 }
 
 impl ShiftStripeSponge {
-    fn new(key: Block) -> ShiftStripeSponge {
+    pub fn new(key: Block) -> ShiftStripeSponge {
         ShiftStripeSponge {
             state: key
         }
     }
 
-    fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge {
+    pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge {
         Self::new(random_block(rng))
     }
 }
