@@ -14,7 +14,7 @@ use rand_core::block::{BlockRng64, BlockRngCore};
 type Word = u64;
 
 // Must be at least 2
-pub const WORDS_PER_BLOCK: usize = 9;
+pub const WORDS_PER_BLOCK: usize = 2;
 
 type Block = [Word; WORDS_PER_BLOCK];
 
@@ -32,13 +32,13 @@ pub const STRIPE_MASKS: [Word; 6] = [
     0xffffffff00000000
 ];
 
-pub const PRIME_ROTATION_AMOUNTS: [usize; 18] = [
+pub const PRIME_ROTATION_AMOUNTS: [usize; 14] = [
     2, 3, 5, 7,
     11, 13, 17, 19,
     23, 29, 31, 37,
-    41, 43, 47, 53,
-    59, 61
+    41, 43
 ];
+// 64 = 3 + 61 = 5 + 59 = 11 + 53 = 17 + 47
 
 pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
     let mut out = input;
@@ -47,8 +47,9 @@ pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
     for perm_byte in permutor_bytes.into_iter() {
         let rotation_selector = (round as u64 + perm_byte as u64) / 6;
         out ^= STRIPE_MASKS[(perm_byte % 6) as usize];
-        out ^= out.rotate_right(PRIME_ROTATION_AMOUNTS[(rotation_selector % 18) as usize] as u32)
+        out ^= out.rotate_right(PRIME_ROTATION_AMOUNTS[(rotation_selector % PRIME_ROTATION_AMOUNTS.len()) as usize] as u32)
             .wrapping_add(META_PERMUTOR );
+        out ^= [0, Word::MAX][(perm_byte >> 7) as usize];
     }
     out
 }
