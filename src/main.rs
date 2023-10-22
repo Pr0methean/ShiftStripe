@@ -14,7 +14,7 @@ use rand_core::block::{BlockRng64, BlockRngCore};
 type Word = u64;
 
 // Must be at least 2
-pub const WORDS_PER_BLOCK: usize = 2;
+pub const WORDS_PER_BLOCK: usize = 9;
 
 type Block = [Word; WORDS_PER_BLOCK];
 
@@ -53,10 +53,18 @@ pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
     out
 }
 
-pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = if WORDS_PER_BLOCK <= 3 || WORDS_PER_BLOCK % 2 == 0 {
-    (WORDS_PER_BLOCK + 2) as u32
-} else {
-    (WORDS_PER_BLOCK + 3) as u32
+pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = match WORDS_PER_BLOCK {
+    0 => panic!("0 words per block?!"),
+    1 => panic!("1 words per block?!"),
+    2 => 4,
+    3 => 5,
+    4 => 6,
+    5 => 8,
+    x => (if x % 2 == 0 {
+        x + 4
+    } else {
+        x + 2
+    }) as u32
 };
 
 
