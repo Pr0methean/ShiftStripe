@@ -47,7 +47,7 @@ pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
     for perm_byte in permutor_bytes.into_iter() {
         let rotation_selector = (round as u64 + perm_byte as u64) / 6;
         out ^= STRIPE_MASKS[(perm_byte % 6) as usize];
-        out ^= out.rotate_right(PRIME_ROTATION_AMOUNTS[(rotation_selector % PRIME_ROTATION_AMOUNTS.len()) as usize] as u32)
+        out ^= out.rotate_right(PRIME_ROTATION_AMOUNTS[(rotation_selector % PRIME_ROTATION_AMOUNTS.len() as u64) as usize] as u32)
             .wrapping_add(META_PERMUTOR );
         out ^= [0, Word::MAX][(perm_byte >> 7) as usize];
     }
