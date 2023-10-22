@@ -54,8 +54,8 @@ pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
 }
 
 pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = match WORDS_PER_BLOCK {
-    0 => panic!("0 words per block?!"),
-    1 => panic!("1 words per block?!"),
+    0 => panic!("Need at least 2 words per block"),
+    1 => panic!("Need at least 2 words per block"),
     2 => 4,
     3 => 5,
     4 => 6,
