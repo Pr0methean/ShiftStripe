@@ -49,23 +49,20 @@ pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
         out ^= STRIPE_MASKS[(perm_byte % 6) as usize];
         out ^= out.rotate_right(PRIME_ROTATION_AMOUNTS[(rotation_selector % PRIME_ROTATION_AMOUNTS.len() as u64) as usize] as u32)
             .wrapping_add(META_PERMUTOR );
-        out ^= [0, Word::MAX][(perm_byte >> 7) as usize];
+        out = [out, out.swap_bytes(), out.reverse_bits(), Word::MAX ^ out][((perm_byte >> 2) % 4) as usize];
     }
     out
 }
 
-pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = match WORDS_PER_BLOCK {
-    0 => panic!("Need at least 2 words per block"),
-    1 => panic!("Need at least 2 words per block"),
-    2 => 4,
-    3 => 5,
-    4 => 6,
-    5 => 8,
-    x => (if x % 2 == 0 {
-        x + 4
-    } else {
-        x + 2
-    }) as u32
+// Equal to:
+//  4 rounds at 2 words per block
+//  2n+4 rounds at 2n+4 words per block
+//  2n+4 rounds at 2n+3 words per block
+// TODO: Find some theoretical explanation of why this is the right number.
+pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = if WORDS_PER_BLOCK <= 4 {
+    4
+} else {
+    ((WORDS_PER_BLOCK as u32 + 1) / 2) * 2
 };
 
 
