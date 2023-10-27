@@ -31,7 +31,7 @@ pub const STRIPE_MASKS: [Word; 8] = [
     0xffff0000ffff0000,
     0xffffffff00000000,
     Word::MAX,
-    0x5aa5a55aa55a5aa5
+    0x6996966996696996
 ];
 
 pub const PRIME_ROTATION_AMOUNTS: [usize; 13] = [
