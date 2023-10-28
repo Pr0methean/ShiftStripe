@@ -57,16 +57,15 @@ pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
 }
 
 // Equal to:
-//  4 rounds at 2 words per block
+//  3 rounds at 2 words per block
 //  2n+4 rounds at 2n+4 words per block
 //  2n+4 rounds at 2n+3 words per block
 // TODO: Find some theoretical explanation of why this is the right number.
-pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = if WORDS_PER_BLOCK <= 4 {
-    4
+pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = if WORDS_PER_BLOCK < 4 {
+    WORDS_PER_BLOCK as u32 + 1
 } else {
-    ((WORDS_PER_BLOCK as u32 + 1) / 2) * 2
+    (WORDS_PER_BLOCK + (WORDS_PER_BLOCK & 1)) as u32
 };
-
 
 fn shift_stripe_feistel(mut left: Block, mut right: Block, mut permutor: Block, rounds: u32) -> (Block, Block) {
     for round in 0..rounds {
