@@ -14,7 +14,7 @@ use rand_core::block::{BlockRng64, BlockRngCore};
 type Word = u64;
 
 // Must be at least 2
-pub const WORDS_PER_BLOCK: usize = 5;
+pub const WORDS_PER_BLOCK: usize = 4;
 
 type Block = [Word; WORDS_PER_BLOCK];
 
@@ -34,13 +34,11 @@ pub const STRIPE_MASKS: [Word; 8] = [
     0x6996966996696996
 ];
 
-pub const PRIME_ROTATION_AMOUNTS: [usize; 13] = [
+pub const PRIME_ROTATION_AMOUNTS: [usize; 11] = [
     2, 3, 5, 7,
     11, 13, 17, 19,
-    23, 29, 31, 37,
-    41 //, 43
+    23, 29, 31
 ];
-// 64 = 3 + 61 = 5 + 59 = 11 + 53 = 17 + 47
 
 pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
     let mut out = input;
@@ -61,10 +59,10 @@ pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
 //  2n+4 rounds at 2n+4 words per block
 //  2n+4 rounds at 2n+3 words per block
 // TODO: Find some theoretical explanation of why this is the right number.
-pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = if WORDS_PER_BLOCK < 4 {
-    WORDS_PER_BLOCK as u32 + 1
+pub const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = WORDS_PER_BLOCK as u32 + if WORDS_PER_BLOCK <= 3 {
+    1
 } else {
-    (WORDS_PER_BLOCK + (WORDS_PER_BLOCK & 1)) as u32
+    0
 };
 
 fn shift_stripe_feistel(mut left: Block, mut right: Block, mut permutor: Block, rounds: u32) -> (Block, Block) {
