@@ -1,26 +1,30 @@
 use std::hash::Hasher;
 use std::mem::size_of;
-use rand::Rng;
-use crate::block::{Block, block_to_bytes, bytes_to_block, compress_block_to_unit, random_block, WORDS_PER_BLOCK};
-use crate::core::{META_PERMUTOR, shift_stripe};
+use rand::{Fill, Rng};
+use crate::block::{block_to_bytes, bytes_to_block, compress_block_to_unit, random_block};
+use crate::core::{META_PERMUTOR, shift_stripe, Word};
 
-pub struct ShiftStripeSponge {
-    state: Block
+pub struct ShiftStripeSponge<const WORDS_PER_BLOCK: usize> {
+    state: [Word; WORDS_PER_BLOCK]
 }
 
-impl ShiftStripeSponge {
-    pub fn new(key: Block) -> ShiftStripeSponge {
+impl <const WORDS_PER_BLOCK: usize> ShiftStripeSponge<WORDS_PER_BLOCK> {
+    pub fn new(key: [Word; WORDS_PER_BLOCK]) -> ShiftStripeSponge<WORDS_PER_BLOCK> {
         ShiftStripeSponge {
             state: key
         }
     }
+}
 
-    pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge {
+impl <const WORDS_PER_BLOCK: usize> ShiftStripeSponge<WORDS_PER_BLOCK>
+    where [Word; WORDS_PER_BLOCK]: Default + Fill {
+    pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge<WORDS_PER_BLOCK> {
         Self::new(random_block(rng))
     }
 }
 
-impl Hasher for ShiftStripeSponge {
+impl <const WORDS_PER_BLOCK: usize> Hasher for ShiftStripeSponge<WORDS_PER_BLOCK>
+    where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
     fn finish(&self) -> u64 {
         compress_block_to_unit(&self.state)
     }
@@ -29,8 +33,8 @@ impl Hasher for ShiftStripeSponge {
         for byte in bytes.iter().copied() {
             let mut state_bytes = block_to_bytes(self.state);
             state_bytes.rotate_right(1);
-            state_bytes[size_of::<Block>() - 1] ^= byte;
-            self.state.copy_from_slice(&bytes_to_block(state_bytes.into_iter()));
+            state_bytes[size_of::<[Word; WORDS_PER_BLOCK]>() - 1] ^= byte;
+            self.state.copy_from_slice(&bytes_to_block::<_, WORDS_PER_BLOCK>(state_bytes.into_iter()));
             self.state[0] ^= shift_stripe(
                 self.state[1],
                 self.state[WORDS_PER_BLOCK - 1].wrapping_add(META_PERMUTOR),
@@ -47,11 +51,12 @@ mod tests {
     use std::hash::Hasher;
     use std::mem::size_of;
     use rand::{random, Rng, thread_rng};
-    use crate::block::{Block};
     use crate::core::Word;
     use crate::hashing::ShiftStripeSponge;
 
-    fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: Block, inputs: T) {
+    fn test_hashing<T: Iterator<Item=Box<[u8]>>, const WORDS_PER_BLOCK: usize>(key: [Word; WORDS_PER_BLOCK], inputs: T)
+    where ShiftStripeSponge<WORDS_PER_BLOCK> : Hasher,
+        [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
         // Check distribution modulo more primes than we use as rotation amounts
         const TEST_PRIMES: [u128; 14] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 43, 47];
 
@@ -66,7 +71,7 @@ mod tests {
         let mut hash_reverses: Vec<_> = hash_reverses.into_iter().collect();
         hash_reverses.sort();
         let mut hash_mods: Vec<_> = TEST_PRIMES.iter().map(|x| vec![0u32; *x as usize]).collect();
-        let mut byte_frequencies = [[0u32; u8::MAX as usize + 1]; size_of::<Block>()];
+        let mut byte_frequencies = [[0u32; u8::MAX as usize + 1]; size_of::<[Word; WORDS_PER_BLOCK]>()];
         for (value, key) in hash_reverses.into_iter() {
             for (index, byte) in key.iter().copied().enumerate() {
                 byte_frequencies[index][byte as usize] += 1;
@@ -106,14 +111,14 @@ mod tests {
                 low_p_values += 1;
             }
         }
-        assert!(low_p_values <= (size_of::<Block>() + TEST_PRIMES.len()) / 4,
+        assert!(low_p_values <= (size_of::<[Word; WORDS_PER_BLOCK]>() + TEST_PRIMES.len()) / 4,
                 "Too many low p values");
     }
 
     #[test]
     fn test_hashing_zero_key() {
-        test_hashing(Block::default(),
-                     once([].into())
+        test_hashing::<_, 4>(<[Word; 4]>::default(),
+                             once([].into())
                          .chain((0..=u8::MAX).map(|x| [x].into()))
                          .chain((0..=u8::MAX).flat_map(|x| (0..=u8::MAX).map(move |y| [x, y].into())))
         );
@@ -121,33 +126,33 @@ mod tests {
 
     #[test]
     fn test_hashing_random_inputs() {
-        const LEN_PER_INPUT: usize = size_of::<Block>();
+        const LEN_PER_INPUT: usize = size_of::<[Word; 2]>();
         const INPUT_COUNT: usize = 1 << 16;
         let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
         thread_rng().fill(inputs.as_mut_slice());
         let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
         inputs.sort();
         inputs.dedup();
-        test_hashing(Block::default(),
-                     inputs.into_iter());
+        test_hashing::<_, 4>(<[Word; 4]>::default(),
+                             inputs.into_iter());
     }
 
     #[test]
     fn test_hashing_random_inputs_and_random_key() {
-        const LEN_PER_INPUT: usize = size_of::<Block>();
+        const LEN_PER_INPUT: usize = size_of::<[Word; 2]>();
         const INPUT_COUNT: usize = 1 << 16;
         let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
         thread_rng().fill(inputs.as_mut_slice());
         let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
         inputs.sort();
         inputs.dedup();
-        test_hashing(random(),
+        test_hashing::<_, 4>(random(),
                      inputs.into_iter());
     }
 
     #[test]
     fn test_hashing_random_key() {
-        test_hashing(random(),
+        test_hashing::<_, 4>(random(),
                      once([].into())
                          .chain((0..=u8::MAX).map(|x| [x].into()))
                          .chain((0..=u8::MAX).flat_map(|x| (0..=u8::MAX).map(move |y| [x, y].into()))))
