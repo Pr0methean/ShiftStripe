@@ -14,14 +14,12 @@ use rand_core::block::{BlockRng64, BlockRngCore};
 type Word = u64;
 
 // Must be at least 2
-pub const WORDS_PER_BLOCK: usize = 4;
+pub const WORDS_PER_BLOCK: usize = 6;
 
 type Block = [Word; WORDS_PER_BLOCK];
 
 // (pi * 1.shl(62)) computed at high precision and rounded down
 pub const META_PERMUTOR: Word = 0xc90fdaa2_2168c234;
-// more bits of pi
-pub const SECOND_META_PERMUTOR: Word = 0xc4c6628b_80dc1cd1;
 
 pub const STRIPE_MASKS: [Word; 8] = [
     0xaaaaaaaaaaaaaaaa,
@@ -34,7 +32,9 @@ pub const STRIPE_MASKS: [Word; 8] = [
     0x6996966996696996
 ];
 
-pub const PRIME_ROTATION_AMOUNTS: [usize; 11] = [
+// Compiling the prime-rotation step gives 0x2e8ba2e8ba2e8ba3 as a constant
+// 3×131×2731×409891×7623851 (5 distinct prime factors)
+pub const PRIME_ROTATION_AMOUNTS: [u8; 11] = [
     2, 3, 5, 7,
     11, 13, 17, 19,
     23, 29, 31
@@ -190,7 +190,7 @@ fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: Block, inputs: T) {
     }
     let mut hash_reverses: Vec<_> = hash_reverses.into_iter().collect();
     hash_reverses.sort();
-    let mut hash_mods: Vec<_> = PRIME_ROTATION_AMOUNTS.iter().map(|x| vec![0u32; *x]).collect();
+    let mut hash_mods: Vec<_> = PRIME_ROTATION_AMOUNTS.iter().map(|x| vec![0u32; *x as usize]).collect();
     let mut byte_frequencies = [[0u32; u8::MAX as usize + 1]; size_of::<Block>()];
     for (value, key) in hash_reverses.iter() {
         for (index, byte) in key.iter().copied().enumerate() {
@@ -219,7 +219,7 @@ fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: Block, inputs: T) {
         let leftover = (Word::MAX as u128 + 1) - *prime as u128 * count_per_mod as u128;
         let prob_per_mod = (count_per_mod as f64) / ((Word::MAX as u128 + 1) as f64);
         let prob_per_mod_with_left = (count_per_mod + 1) as f64 / ((Word::MAX as u128 + 1) as f64);
-        let mut probabilities: Vec<_> = repeat(prob_per_mod).take(*prime).collect();
+        let mut probabilities: Vec<_> = repeat(prob_per_mod).take(*prime as usize).collect();
         probabilities[0..(leftover as usize)].fill(prob_per_mod_with_left);
         let sum_of_probs: f64 = probabilities.iter().copied().sum();
         debug_assert!(sum_of_probs >= 1.0 - 1.0e-9);
