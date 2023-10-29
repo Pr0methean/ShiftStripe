@@ -3,6 +3,9 @@ name = "shift_stripe"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+bench = true
+
 [profile.release]
 lto = true
 codegen-units = 1

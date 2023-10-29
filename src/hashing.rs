@@ -1,9 +1,10 @@
 use std::hash::Hasher;
 use std::mem::size_of;
-use rand::{Fill, Rng};
+use rand::{Rng};
 use crate::block::{block_to_bytes, bytes_to_block, compress_block_to_unit, random_block};
 use crate::core::{META_PERMUTOR, shift_stripe, Word};
 
+#[derive(Clone, Debug)]
 pub struct ShiftStripeSponge<const WORDS_PER_BLOCK: usize> {
     state: [Word; WORDS_PER_BLOCK]
 }
@@ -16,8 +17,7 @@ impl <const WORDS_PER_BLOCK: usize> ShiftStripeSponge<WORDS_PER_BLOCK> {
     }
 }
 
-impl <const WORDS_PER_BLOCK: usize> ShiftStripeSponge<WORDS_PER_BLOCK>
-    where [Word; WORDS_PER_BLOCK]: Default + Fill {
+impl <const WORDS_PER_BLOCK: usize> ShiftStripeSponge<WORDS_PER_BLOCK> {
     pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge<WORDS_PER_BLOCK> {
         Self::new(random_block(rng))
     }

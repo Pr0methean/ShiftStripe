@@ -10,8 +10,8 @@ pub const STRIPE_MASKS: [Word; 8] = [
     0xff00ff00ff00ff00,
     0xffff0000ffff0000,
     0xffffffff00000000,
-    Word::MAX,
-    0x6996966996696996
+    0x69969669ffffffff,
+    0x0000000096696996
 ];
 
 // This array is padded to speed up copying; this is its real length.

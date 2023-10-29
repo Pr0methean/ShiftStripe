@@ -1,21 +1,21 @@
 use std::mem::size_of;
 use rand::{Fill, Rng};
 use rand_core::block::BlockRngCore;
-use crate::block::{compress_block_to_unit, int_to_block, random_block, xor_blocks};
+use crate::block::{compress_block_to_unit, DefaultArray, int_to_block, random_block};
 use crate::core::{shift_stripe, Word};
 
 fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
     left: &mut [Word; WORDS_PER_BLOCK], right: &mut [Word; WORDS_PER_BLOCK], mut permutor: [Word; WORDS_PER_BLOCK], rounds: u32)  {
     for round in 0..rounds {
-        let new_left = right.clone();
         for unit_index in 0..WORDS_PER_BLOCK {
+            let new_left = right[unit_index].clone();
             let f = shift_stripe(right[unit_index], permutor[unit_index], round);
             right[unit_index] = left[unit_index] ^ f;
             let new_permutor = shift_stripe(permutor[unit_index], left[
                 (unit_index + WORDS_PER_BLOCK / 2) % WORDS_PER_BLOCK], u32::MAX - round);
             permutor[unit_index] ^= new_permutor;
+            left[unit_index] = new_left;
         }
-        *left = new_left;
         left.rotate_right(1);
     }
 }
@@ -27,17 +27,17 @@ pub struct ShiftStripeFeistelRngCore<const WORDS_PER_BLOCK: usize> {
 }
 
 impl <const WORDS_PER_BLOCK: usize> BlockRngCore for ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
-where [u64; 2 * WORDS_PER_BLOCK]: Copy + Default,
-      [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+where [(); 2 * WORDS_PER_BLOCK]:, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
     type Item = Word;
-    type Results = [u64; 2 * WORDS_PER_BLOCK];
+    type Results = DefaultArray<u64, { 2 * WORDS_PER_BLOCK }>;
 
     fn generate(&mut self, results: &mut Self::Results) {
-        let mut result_blocks = results.array_chunks_mut();
+        results.0[0] = self.counter;
+        results.0[2 * WORDS_PER_BLOCK - 1] = self.counter;
+        self.counter += 1;
+        let mut result_blocks = results.0.array_chunks_mut();
         let first = result_blocks.next().unwrap();
         let second = result_blocks.next().unwrap();
-        *first = int_to_block(self.counter.into());
-        *second = int_to_block(self.counter.into());
         shift_stripe_feistel(
             first,
             second,
@@ -47,13 +47,13 @@ where [u64; 2 * WORDS_PER_BLOCK]: Copy + Default,
 }
 
 impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
-    where [u64; 2 * WORDS_PER_BLOCK]: Copy + Default, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+    where [(); 2 * WORDS_PER_BLOCK]: {
     // Equal to:
     //  3 rounds at 2 words per block
     //  2n+4 rounds at 2n+4 words per block
     //  2n+4 rounds at 2n+3 words per block
     // TODO: Find some theoretical explanation of why this is the right number.
-    const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = WORDS_PER_BLOCK as u32 + if WORDS_PER_BLOCK <= 3 {
+    const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = WORDS_PER_BLOCK as u32 + if WORDS_PER_BLOCK <= 2 {
         1
     } else {
         0
@@ -69,9 +69,7 @@ impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
 }
 
 impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
-    where [Word; WORDS_PER_BLOCK]: Default + Fill,
-          [u64; 2 * WORDS_PER_BLOCK]: Copy + Default,
-          [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+    where [(); 2 * WORDS_PER_BLOCK]: {
     pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK> {
         Self::new(random_block(rng))
     }
@@ -103,7 +101,7 @@ fn check_diffusion_around<const WORDS_PER_BLOCK: usize>(permutor: i128, i: i128)
 fn check_diffusion<const WORDS_PER_BLOCK: usize>(permutor_int: i128, previn1: i128, previn2: i128, thisin1: i128, thisin2: i128)
                                                  -> Vec<String>
     where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
-    const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = 3;
+    use crate::block::xor_blocks;
 
     let mut warnings = Vec::new();
     let permutor: [Word; WORDS_PER_BLOCK] = int_to_block(permutor_int);
@@ -111,8 +109,8 @@ fn check_diffusion<const WORDS_PER_BLOCK: usize>(permutor_int: i128, previn1: i1
     let mut prev2: [Word; WORDS_PER_BLOCK] = int_to_block(previn2);
     let mut this1: [Word; WORDS_PER_BLOCK] = int_to_block(thisin1);
     let mut this2: [Word; WORDS_PER_BLOCK] = int_to_block(thisin2);
-    shift_stripe_feistel(&mut prev1, &mut prev2, permutor, FEISTEL_ROUNDS_TO_DIFFUSE);
-    shift_stripe_feistel(&mut this1, &mut this2, permutor, FEISTEL_ROUNDS_TO_DIFFUSE);
+    shift_stripe_feistel(&mut prev1, &mut prev2, permutor, WORDS_PER_BLOCK as u32);
+    shift_stripe_feistel(&mut this1, &mut this2, permutor, WORDS_PER_BLOCK as u32);
     let xor1 = xor_blocks(&prev1, &this1);
     let xor2 = xor_blocks(&prev2, &this2);
     let bits_in_block = 8 * size_of::<[Word; WORDS_PER_BLOCK]>();

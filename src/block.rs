@@ -1,9 +1,41 @@
 use std::iter::repeat;
 use std::mem::size_of;
 use rand::{Fill, Rng};
+use rand::distributions::{Distribution, Standard};
+use rand_core::Error;
 use crate::core::{shift_stripe, Word};
 
-// Must be at least 2
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Debug)]
+pub struct DefaultArray<T: Default, const N: usize>(pub(crate) [T; N]);
+
+impl <T, const N: usize> Default for DefaultArray<T, N> where T: Default + Copy {
+    fn default() -> Self {
+        DefaultArray([T::default(); N])
+    }
+}
+
+impl <T, const N: usize> AsMut<[T]> for DefaultArray<T, N> where T: Default {
+    fn as_mut(&mut self) -> &mut [T] {
+        self.0.as_mut_slice()
+    }
+}
+
+impl <T, const N: usize> AsRef<[T]> for DefaultArray<T, N> where T: Default {
+    fn as_ref(&self) -> &[T] {
+        self.0.as_slice()
+    }
+}
+
+impl <T, const N: usize> Fill for DefaultArray<T, N> where T: Default, Standard: Distribution<T> {
+    fn try_fill<R: Rng + ?Sized>(&mut self, rng: &mut R) -> Result<(), Error> {
+        for element in self.0.iter_mut() {
+            *element = rng.gen();
+        }
+        Ok(())
+    }
+}
 
 pub fn compress_block_to_unit<const WORDS_PER_BLOCK: usize>(block: &[Word; WORDS_PER_BLOCK]) -> Word {
     block.iter().copied().fold(0, |x, y| shift_stripe(x, y, 0))
@@ -18,11 +50,10 @@ pub fn block_to_bytes<const WORDS_PER_BLOCK: usize>(block: [Word; WORDS_PER_BLOC
     byte_vec.try_into().unwrap()
 }
 
-pub fn random_block<T: Rng, const WORDS_PER_BLOCK: usize>(rand: &mut T) -> [Word; WORDS_PER_BLOCK]
-        where [Word; WORDS_PER_BLOCK]: Default + Fill {
-    let mut block = <[Word; WORDS_PER_BLOCK]>::default();
+pub fn random_block<T: Rng, const WORDS_PER_BLOCK: usize>(rand: &mut T) -> [Word; WORDS_PER_BLOCK] {
+    let mut block = DefaultArray::default();
     rand.fill(&mut block);
-    block
+    block.0
 }
 
 pub fn int_to_block<const WORDS_PER_BLOCK: usize>(input: i128) -> [Word; WORDS_PER_BLOCK]
