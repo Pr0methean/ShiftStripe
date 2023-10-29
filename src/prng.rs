@@ -1,4 +1,4 @@
-use std::mem::size_of;
+use core::mem::size_of;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
 use crate::block::{compress_block_to_unit, DefaultArray, random_block};
@@ -73,6 +73,8 @@ impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
 
 #[cfg(test)]
 mod tests {
+    use crate::core::Word;
+    use core::mem::size_of;
     macro_rules! diffusion_small_keys_test {
         ($num_blocks: expr) => {
             diffusion_small_keys_test!($num_blocks, $num_blocks);
@@ -123,6 +125,7 @@ mod tests {
                                                      rounds: u32) -> Vec<String>
         where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
         use crate::block::{int_to_block, xor_blocks};
+        use crate::prng::shift_stripe_feistel;
 
         let mut warnings = Vec::new();
         let permutor: [Word; WORDS_PER_BLOCK] = int_to_block(permutor_int);

@@ -1,5 +1,5 @@
-use std::hash::Hasher;
-use std::mem::size_of;
+use core::hash::Hasher;
+use core::mem::size_of;
 use rand::{Rng};
 use crate::block::{block_to_bytes, bytes_to_block, compress_block_to_unit, random_block};
 use crate::core::{META_PERMUTOR, shift_stripe, Word};
@@ -48,9 +48,9 @@ impl <const WORDS_PER_BLOCK: usize> Hasher for ShiftStripeSponge<WORDS_PER_BLOCK
 mod tests {
     use core::iter::{once, repeat};
     use std::collections::BTreeMap;
-    use std::hash::Hasher;
-    use std::mem::size_of;
-    use rand::{random, Rng, thread_rng};
+    use core::hash::Hasher;
+    use core::mem::{size_of};
+    use rand::{Rng, thread_rng};
     use crate::block::random_block;
     use crate::block::DefaultArray;
     use crate::core::Word;
@@ -58,6 +58,7 @@ mod tests {
 
     fn test_hashing<T: Iterator<Item=Box<[u8]>>, const WORDS_PER_BLOCK: usize>(key: [Word; WORDS_PER_BLOCK], inputs: T)
     where ShiftStripeSponge<WORDS_PER_BLOCK> : Hasher,
+        [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]: ,
         [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
         // Check distribution modulo more primes than we use as rotation amounts
         const TEST_PRIMES: [u128; 14] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 43, 47];
@@ -73,29 +74,20 @@ mod tests {
         let mut hash_reverses: Vec<_> = hash_reverses.into_iter().collect();
         hash_reverses.sort();
         let mut hash_mods: Vec<_> = TEST_PRIMES.iter().map(|x| vec![0u32; *x as usize]).collect();
-        let mut byte_frequencies = [[0u32; u8::MAX as usize + 1]; size_of::<[Word; WORDS_PER_BLOCK]>()];
-        for (value, key) in hash_reverses.into_iter() {
-            for (index, byte) in key.iter().copied().enumerate() {
-                byte_frequencies[index][byte as usize] += 1;
+        let histogram_size = (u8::MAX as usize + 1) * size_of::<u64>();
+        let mut byte_frequencies = vec![0u32; histogram_size];
+        for (value, _) in hash_reverses.into_iter() {
+            for (index, byte) in value.to_be_bytes().into_iter().enumerate() {
+                byte_frequencies[(index << 8) + byte as usize] += 1;
             }
             for (index, prime) in TEST_PRIMES.iter().copied().enumerate() {
                 hash_mods[index][((value as u128) % prime) as usize] += 1;
             }
         }
-        let mut low_p_values = 0;
-        for (index, byte_frequencies) in byte_frequencies.into_iter().enumerate() {
-            if byte_frequencies.iter().copied().any(|x| x != byte_frequencies[0]) {
-                let (stat, p) = rv::misc::x2_test(byte_frequencies.as_slice(),
-                                                  &[1.0 / ((u8::MAX as usize + 1) as f64); u8::MAX as usize + 1]);
-                println!("Byte distribution for index {}: stat {}, p {:1.4}", index, stat, p);
-                assert!(p >= 0.001, "p < .001; raw distribution: {:?}", byte_frequencies);
-                if p < 0.05 {
-                    low_p_values += 1;
-                }
-            } else {
-                println!("Bytes for index {} are equally distributed", index);
-            }
-        }
+        let expected_freqs = vec![1.0 / histogram_size as f64; histogram_size];
+        let (stat, p) = rv::misc::x2_test(&byte_frequencies, &expected_freqs);
+        println!("Distribution: stat {}, p {:1.4}", stat, p);
+        assert!(p >= 0.01, "p < .001; raw distribution: {:?}", byte_frequencies);
         for (index, prime) in TEST_PRIMES.iter().copied().enumerate() {
             let count_per_mod = (Word::MAX as u128 + 1) / prime;
             let leftover = (Word::MAX as u128 + 1) - prime * count_per_mod;
@@ -109,16 +101,19 @@ mod tests {
             let (stat, p) = rv::misc::x2_test(&hash_mods[index], &probabilities);
             println!("Modulo-{} distribution: stat {}, p {:1.4}", prime, stat, p);
             assert!(p >= 0.001, "p < .001; raw distribution: {:?}", hash_mods[index]);
-            if p < 0.05 {
-                low_p_values += 1;
-            }
         }
-        assert!(low_p_values <= (size_of::<[Word; WORDS_PER_BLOCK]>() + TEST_PRIMES.len()) / 4,
-                "Too many low p values");
+        if byte_frequencies.iter().copied().any(|x| x != byte_frequencies[0]) {
+            let (stat, p) = rv::misc::x2_test(&byte_frequencies, &expected_freqs);
+            println!("Distribution: stat {}, p {:1.4}", stat, p);
+            assert!(p >= 0.01, "p < .001; raw distribution: {:?}", byte_frequencies);
+        } else {
+            println!("Bytes and moduli are equally distributed");
+        }
     }
 
     fn test_hashing_zero_key<const WORDS_PER_BLOCK: usize>()
-        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: ,
+            [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]: {
         test_hashing::<_, WORDS_PER_BLOCK>(DefaultArray::default().0,
                              once([].into())
                          .chain((0..=u8::MAX).map(|x| [x].into()))
@@ -127,7 +122,8 @@ mod tests {
     }
 
     fn test_hashing_random_inputs<const WORDS_PER_BLOCK: usize>()
-        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]:{
+        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]:,
+        [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]:{
         const LEN_PER_INPUT: usize = size_of::<[Word; 2]>();
         const INPUT_COUNT: usize = 1 << 16;
         let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
@@ -140,7 +136,8 @@ mod tests {
     }
 
     fn test_hashing_random_inputs_and_random_key<const WORDS_PER_BLOCK: usize>()
-        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+            where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: ,
+            [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]: {
         const LEN_PER_INPUT: usize = size_of::<[Word; 2]>();
         const INPUT_COUNT: usize = 1 << 16;
         let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
@@ -153,8 +150,11 @@ mod tests {
     }
 
     fn test_hashing_random_key<const WORDS_PER_BLOCK: usize>()
-        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
-        test_hashing::<_, WORDS_PER_BLOCK>(random_block(&mut thread_rng()),
+        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: ,
+        [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+        let key = random_block(&mut thread_rng());
+        log::info!("Using key {:02x?}", key);
+        test_hashing::<_, WORDS_PER_BLOCK>(key,
                      once([].into())
                          .chain((0..=u8::MAX).map(|x| [x].into()))
                          .chain((0..=u8::MAX).flat_map(|x| (0..=u8::MAX).map(move |y| [x, y].into()))))

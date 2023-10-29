@@ -1,3 +1,5 @@
+use std::hint::unreachable_unchecked;
+
 pub type Word = u64;
 
 // (pi * 1.shl(62)) computed at high precision and rounded down

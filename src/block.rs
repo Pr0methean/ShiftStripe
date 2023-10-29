@@ -1,5 +1,5 @@
 use std::iter::repeat;
-use std::mem::size_of;
+use core::mem::size_of;
 use rand::{Fill, Rng};
 use rand::distributions::{Distribution, Standard};
 use rand_core::Error;
