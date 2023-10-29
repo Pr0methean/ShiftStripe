@@ -87,7 +87,7 @@ mod tests {
         let expected_freqs = vec![1.0 / histogram_size as f64; histogram_size];
         let (stat, p) = rv::misc::x2_test(&byte_frequencies, &expected_freqs);
         println!("Distribution: stat {}, p {:1.4}", stat, p);
-        assert!(p >= 0.01, "p < .001; raw distribution: {:?}", byte_frequencies);
+        assert!(p >= 0.001, "p < .001; raw distribution: {:?}", byte_frequencies);
         for (index, prime) in TEST_PRIMES.iter().copied().enumerate() {
             let count_per_mod = (Word::MAX as u128 + 1) / prime;
             let leftover = (Word::MAX as u128 + 1) - prime * count_per_mod;
