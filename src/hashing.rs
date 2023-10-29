@@ -51,6 +51,8 @@ mod tests {
     use std::hash::Hasher;
     use std::mem::size_of;
     use rand::{random, Rng, thread_rng};
+    use crate::block::random_block;
+    use crate::block::DefaultArray;
     use crate::core::Word;
     use crate::hashing::ShiftStripeSponge;
 
@@ -115,17 +117,17 @@ mod tests {
                 "Too many low p values");
     }
 
-    #[test]
-    fn test_hashing_zero_key() {
-        test_hashing::<_, 4>(<[Word; 4]>::default(),
+    fn test_hashing_zero_key<const WORDS_PER_BLOCK: usize>()
+        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+        test_hashing::<_, WORDS_PER_BLOCK>(DefaultArray::default().0,
                              once([].into())
                          .chain((0..=u8::MAX).map(|x| [x].into()))
                          .chain((0..=u8::MAX).flat_map(|x| (0..=u8::MAX).map(move |y| [x, y].into())))
         );
     }
 
-    #[test]
-    fn test_hashing_random_inputs() {
+    fn test_hashing_random_inputs<const WORDS_PER_BLOCK: usize>()
+        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]:{
         const LEN_PER_INPUT: usize = size_of::<[Word; 2]>();
         const INPUT_COUNT: usize = 1 << 16;
         let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
@@ -133,12 +135,12 @@ mod tests {
         let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
         inputs.sort();
         inputs.dedup();
-        test_hashing::<_, 4>(<[Word; 4]>::default(),
+        test_hashing::<_, WORDS_PER_BLOCK>(DefaultArray::default().0,
                              inputs.into_iter());
     }
 
-    #[test]
-    fn test_hashing_random_inputs_and_random_key() {
+    fn test_hashing_random_inputs_and_random_key<const WORDS_PER_BLOCK: usize>()
+        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
         const LEN_PER_INPUT: usize = size_of::<[Word; 2]>();
         const INPUT_COUNT: usize = 1 << 16;
         let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
@@ -146,15 +148,43 @@ mod tests {
         let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
         inputs.sort();
         inputs.dedup();
-        test_hashing::<_, 4>(random(),
+        test_hashing::<_, WORDS_PER_BLOCK>(random_block(&mut thread_rng()),
                      inputs.into_iter());
     }
 
-    #[test]
-    fn test_hashing_random_key() {
-        test_hashing::<_, 4>(random(),
+    fn test_hashing_random_key<const WORDS_PER_BLOCK: usize>()
+        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+        test_hashing::<_, WORDS_PER_BLOCK>(random_block(&mut thread_rng()),
                      once([].into())
                          .chain((0..=u8::MAX).map(|x| [x].into()))
                          .chain((0..=u8::MAX).flat_map(|x| (0..=u8::MAX).map(move |y| [x, y].into()))))
     }
+
+    macro_rules! parameterize_hashing_test {
+        ($func: ident, $num_blocks: expr) => {
+            paste::item!{
+                #[test]
+                fn [< test_hashing_ $num_blocks _blocks_ $func >] () {
+                    $func::< $num_blocks >();
+                }
+            }
+        }
+    }
+
+    macro_rules! hashing_test_suite {
+        ($num_blocks: expr) => {
+            parameterize_hashing_test!(test_hashing_zero_key, $num_blocks);
+            parameterize_hashing_test!(test_hashing_random_inputs, $num_blocks);
+            parameterize_hashing_test!(test_hashing_random_key, $num_blocks);
+            parameterize_hashing_test!(test_hashing_random_inputs_and_random_key, $num_blocks);
+        };
+    }
+
+    hashing_test_suite!(2);
+    hashing_test_suite!(3);
+    hashing_test_suite!(4);
+    hashing_test_suite!(5);
+    hashing_test_suite!(6);
+    hashing_test_suite!(7);
+    hashing_test_suite!(8);
 }

@@ -16,9 +16,9 @@ use rand::{RngCore};
 use rand_core::block::{BlockRng64};
 use crate::prng::ShiftStripeFeistelRngCore;
 
-
+const WORDS_PER_BLOCK: usize = 5;
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut rng = BlockRng64::new(ShiftStripeFeistelRngCore::new([0; 2].try_into()?));
+    let mut rng = BlockRng64::new(ShiftStripeFeistelRngCore::new([0; WORDS_PER_BLOCK].try_into()?));
     let mut stdout = std::io::stdout();
     let mut write_result = Ok(());
     let mut out_buffer = [0u8; 1024];
