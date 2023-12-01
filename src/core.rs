@@ -26,13 +26,13 @@ pub const PRIME_ROTATION_AMOUNTS: [u8; 16] = [
 pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
     let mut out = input;
     permutor = permutor.rotate_right(round.wrapping_add(2));
-    let permutor_bytes = permutor.to_be_bytes();
-    for perm_byte in permutor_bytes.into_iter() {
-        let rotation_selector = round as usize + perm_byte as usize;
-        out ^= STRIPE_MASKS[(perm_byte & 7) as usize];
+    for _ in 0..8 {
+        let rotation_selector = (permutor as usize).wrapping_add(round as usize);
+        out ^= STRIPE_MASKS[(permutor & 7) as usize];
         out ^= out.rotate_right(PRIME_ROTATION_AMOUNTS[rotation_selector % NUM_PRIMES] as u32)
-            .wrapping_add(META_PERMUTOR );
-        out = [out, out.swap_bytes(), out.reverse_bits()][(perm_byte % 3) as usize];
+            .wrapping_add(META_PERMUTOR);
+        out = [out, out.swap_bytes(), out.reverse_bits()][(permutor % 3) as usize];
+        permutor >>= 8;
     }
     out
 }
