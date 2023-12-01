@@ -180,11 +180,20 @@ mod tests {
         };
     }
 
-    hashing_test_suite!(2);
-    hashing_test_suite!(3);
-    hashing_test_suite!(4);
-    hashing_test_suite!(5);
-    hashing_test_suite!(6);
-    hashing_test_suite!(7);
-    hashing_test_suite!(8);
+    hashing_test_suite!(02);
+    hashing_test_suite!(03);
+    hashing_test_suite!(04);
+    hashing_test_suite!(05);
+    hashing_test_suite!(06);
+    hashing_test_suite!(07);
+    hashing_test_suite!(08);
+    hashing_test_suite!(09);
+    hashing_test_suite!(10);
+    hashing_test_suite!(11);
+    hashing_test_suite!(12);
+    hashing_test_suite!(13);
+    hashing_test_suite!(14);
+    hashing_test_suite!(15);
+    hashing_test_suite!(16);
+    hashing_test_suite!(17);
 }

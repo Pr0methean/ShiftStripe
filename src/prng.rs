@@ -2,7 +2,7 @@ use core::mem::size_of;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
 use crate::block::{compress_block_to_unit, DefaultArray, random_block};
-use crate::core::{shift_stripe, Word};
+use crate::core::{META_PERMUTOR, shift_stripe, Word};
 
 fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
     left: &mut [Word; WORDS_PER_BLOCK], right: &mut [Word; WORDS_PER_BLOCK], mut permutor: [Word; WORDS_PER_BLOCK], rounds: u32)  {
@@ -33,7 +33,7 @@ where [(); 2 * WORDS_PER_BLOCK]:, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
 
     fn generate(&mut self, results: &mut Self::Results) {
         results.0[0] = self.counter;
-        results.0[2 * WORDS_PER_BLOCK - 1] = self.counter;
+        results.0[2 * WORDS_PER_BLOCK - 1] = self.counter.wrapping_add(META_PERMUTOR);
         self.counter += 1;
         let mut result_blocks = results.0.array_chunks_mut();
         let first = result_blocks.next().unwrap();
@@ -93,8 +93,8 @@ mod tests {
             }
         }
     }
-    diffusion_small_keys_test!(02,03);
-    diffusion_small_keys_test!(03);
+    diffusion_small_keys_test!(02,04);
+    diffusion_small_keys_test!(03,04);
     diffusion_small_keys_test!(04);
     diffusion_small_keys_test!(05);
     diffusion_small_keys_test!(06);
@@ -108,6 +108,7 @@ mod tests {
     diffusion_small_keys_test!(14);
     diffusion_small_keys_test!(15);
     diffusion_small_keys_test!(16);
+    diffusion_small_keys_test!(17);
 
     fn check_diffusion_around<const WORDS_PER_BLOCK: usize>(permutor: i128, i: i128, rounds: u32) -> Vec<String>
         where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
