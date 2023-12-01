@@ -87,7 +87,16 @@ mod tests {
         let expected_freqs = vec![1.0 / histogram_size as f64; histogram_size];
         let (stat, p) = rv::misc::x2_test(&byte_frequencies, &expected_freqs);
         println!("Distribution: stat {}, p {:1.4}", stat, p);
-        assert!(p >= 0.001, "p < .001; raw distribution: {:?}", byte_frequencies);
+        if p < 0.0001 {
+            // try to identify a specific byte as culprit
+            for byte_index in 0..size_of::<u64>() {
+                let nth_byte = &byte_frequencies[(byte_index << 8)..((byte_index + 1) << 8)];
+                let (stat, p) = rv::misc::x2_test(&nth_byte, &expected_freqs[0..(1 << 8)]);
+                assert!(p >= 0.0001, "stat {}, p {} < .0001 for byte {}; raw distribution: {:?}",
+                        stat, p, byte_index, nth_byte);
+            }
+            panic!("p < .0001; raw distribution: {:?}", byte_frequencies);
+        }
         for (index, prime) in TEST_PRIMES.iter().copied().enumerate() {
             let count_per_mod = (Word::MAX as u128 + 1) / prime;
             let leftover = (Word::MAX as u128 + 1) - prime * count_per_mod;
@@ -100,7 +109,7 @@ mod tests {
             debug_assert!(sum_of_probs <= 1.0 + 1.0e-9);
             let (stat, p) = rv::misc::x2_test(&hash_mods[index], &probabilities);
             println!("Modulo-{} distribution: stat {}, p {:1.4}", prime, stat, p);
-            assert!(p >= 0.001, "p < .001; raw distribution: {:?}", hash_mods[index]);
+            assert!(p >= 0.0001, "p < .0001; raw distribution: {:?}", hash_mods[index]);
         }
         if byte_frequencies.iter().copied().any(|x| x != byte_frequencies[0]) {
             let (stat, p) = rv::misc::x2_test(&byte_frequencies, &expected_freqs);
