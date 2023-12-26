@@ -46,12 +46,12 @@ where [(); 2 * WORDS_PER_BLOCK]:, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
 
 impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
     where [(); 2 * WORDS_PER_BLOCK]: {
-    // TODO: Find out why 2 blocks still require 3 rounds.
-    const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = WORDS_PER_BLOCK as u32 + if WORDS_PER_BLOCK <= 2 {
-        1
+    // TODO: Find out why 2 or 3 blocks still require 4 rounds.
+    const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = if WORDS_PER_BLOCK <= 4 {
+        4
     } else {
-        0
-    };
+        WORDS_PER_BLOCK
+    } as u32;
     pub fn new(seed: [Word; WORDS_PER_BLOCK]) -> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK> {
         let permutor = seed;
         let counter = compress_block_to_unit(&seed);

@@ -38,7 +38,7 @@ impl <T, const N: usize> Fill for DefaultArray<T, N> where T: Default, Standard:
 }
 
 pub fn compress_block_to_unit<const WORDS_PER_BLOCK: usize>(block: &[Word; WORDS_PER_BLOCK]) -> Word {
-    block.iter().copied().fold(0, |x, y| shift_stripe(x, y, 0))
+    block.iter().copied().enumerate().fold(0, |x, (round, y)| shift_stripe(x, y, round as u32))
 }
 
 pub fn bytes_to_block<T: Iterator<Item=u8>, const WORDS_PER_BLOCK: usize>(bytes: T) -> [Word; WORDS_PER_BLOCK] {

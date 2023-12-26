@@ -16,12 +16,10 @@ pub const STRIPE_MASKS: [Word; 6] = [
 
 // PRIME_ROTATION_AMOUNTS is padded to speed up copying; NUM_PRIMES is its real length.
 pub const NUM_PRIMES: usize = 11;
-pub const PRIME_ROTATION_AMOUNTS: [u8; 16] = [
+pub const PRIME_ROTATION_AMOUNTS: [u8; NUM_PRIMES] = [
     2, 3, 5, 7,
     11, 13, 17, 19,
-    23, 29, 31,
-    0, 0, 0, 0, 0
-];
+    23, 29, 31];
 
 #[inline]
 pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {

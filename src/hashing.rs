@@ -2,7 +2,7 @@ use core::hash::Hasher;
 use core::mem::size_of;
 use rand::{Rng};
 use crate::block::{compress_block_to_unit, random_block};
-use crate::core::{META_PERMUTOR, shift_stripe, Word};
+use crate::core::{shift_stripe, Word};
 
 #[derive(Clone, Debug)]
 pub struct ShiftStripeSponge<const WORDS_PER_BLOCK: usize> {
@@ -35,7 +35,7 @@ impl <const WORDS_PER_BLOCK: usize> Hasher for ShiftStripeSponge<WORDS_PER_BLOCK
             self.state[WORDS_PER_BLOCK - 1] ^= byte as Word;
             self.state[0] ^= shift_stripe(
                 self.state[1],
-                self.state[(2 % WORDS_PER_BLOCK)],
+                self.state[2 % WORDS_PER_BLOCK],
                 0
             );
         }
