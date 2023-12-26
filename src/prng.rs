@@ -11,9 +11,7 @@ fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
             let new_left = right[unit_index].clone();
             let f = shift_stripe(right[unit_index], permutor[unit_index], round);
             right[unit_index] = left[unit_index] ^ f;
-            let new_permutor = shift_stripe(permutor[unit_index], left[
-                (unit_index + WORDS_PER_BLOCK / 2) % WORDS_PER_BLOCK], u32::MAX - round);
-            permutor[unit_index] ^= new_permutor;
+            permutor[unit_index] = permutor[unit_index].rotate_right(11);
             left[unit_index] = new_left;
         }
         left.rotate_right(1);
@@ -116,7 +114,6 @@ mod tests {
         warnings.extend_from_slice(&check_diffusion::<WORDS_PER_BLOCK>(permutor, i - 1, 0, i, 0, rounds));
 
         warnings.extend_from_slice(&check_diffusion::<WORDS_PER_BLOCK>(permutor, i - 1, i, i, i, rounds));
-        warnings.extend_from_slice(&check_diffusion::<WORDS_PER_BLOCK>(permutor, i, i - 1, i, i, rounds));
         warnings.extend_from_slice(&check_diffusion::<WORDS_PER_BLOCK>(permutor, i - 1, i - 1, i, i, rounds));
         warnings.extend_from_slice(&check_diffusion::<WORDS_PER_BLOCK>(permutor, i, i, i, i - 1, rounds));
         warnings

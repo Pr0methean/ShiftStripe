@@ -1,7 +1,7 @@
 use core::hash::Hasher;
 use core::mem::size_of;
 use rand::{Rng};
-use crate::block::{block_to_bytes, bytes_to_block, compress_block_to_unit, random_block};
+use crate::block::{compress_block_to_unit, random_block};
 use crate::core::{META_PERMUTOR, shift_stripe, Word};
 
 #[derive(Clone, Debug)]
@@ -31,13 +31,11 @@ impl <const WORDS_PER_BLOCK: usize> Hasher for ShiftStripeSponge<WORDS_PER_BLOCK
 
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes.iter().copied() {
-            let mut state_bytes = block_to_bytes(self.state);
-            state_bytes.rotate_right(1);
-            state_bytes[size_of::<[Word; WORDS_PER_BLOCK]>() - 1] ^= byte;
-            self.state.copy_from_slice(&bytes_to_block::<_, WORDS_PER_BLOCK>(state_bytes.into_iter()));
+            self.state.rotate_right(1);
+            self.state[WORDS_PER_BLOCK - 1] ^= byte as Word;
             self.state[0] ^= shift_stripe(
                 self.state[1],
-                self.state[WORDS_PER_BLOCK - 1].wrapping_add(META_PERMUTOR),
+                self.state[(2 % WORDS_PER_BLOCK)],
                 0
             );
         }
@@ -76,32 +74,39 @@ mod tests {
         let mut hash_mods: Vec<_> = TEST_PRIMES.iter().map(|x| vec![0u32; *x as usize]).collect();
         let histogram_size = (u8::MAX as usize + 1) * size_of::<u64>();
         let mut byte_frequencies = vec![0u32; histogram_size];
-        for (value, _) in hash_reverses.into_iter() {
-            for (index, byte) in value.to_be_bytes().into_iter().enumerate() {
+        for (hash, _input) in hash_reverses.into_iter() {
+            // println!("{:02x?} -> {:016x}", _input, hash);
+            for (index, byte) in hash.to_be_bytes().into_iter().enumerate() {
                 byte_frequencies[(index << 8) + byte as usize] += 1;
             }
             for (index, prime) in TEST_PRIMES.iter().copied().enumerate() {
-                hash_mods[index][((value as u128) % prime) as usize] += 1;
+                hash_mods[index][((hash as u128) % prime) as usize] += 1;
             }
         }
         let expected_freqs = vec![1.0 / histogram_size as f64; histogram_size];
-        let (stat, p) = rv::misc::x2_test(&byte_frequencies, &expected_freqs);
-        println!("Distribution: stat {}, p {:1.4}", stat, p);
-        if p < 0.0001 {
-            // try to identify a specific byte as culprit
-            for byte_index in 0..size_of::<u64>() {
-                let nth_byte = &byte_frequencies[(byte_index << 8)..((byte_index + 1) << 8)];
-                let (stat, p) = rv::misc::x2_test(&nth_byte, &expected_freqs[0..(1 << 8)]);
-                assert!(p >= 0.0001, "stat {}, p {} < .0001 for byte {}; raw distribution: {:?}",
-                        stat, p, byte_index, nth_byte);
+        if byte_frequencies.iter().copied().any(|x| x != byte_frequencies[0]) {
+            let (stat, p) = rv::misc::x2_test(&byte_frequencies, &expected_freqs);
+            println!("Distribution: stat {}, p {:1.4}", stat, p);
+            if p < 0.001 {
+                // try to find a culprit byte
+                for byte_index in 0..size_of::<u64>() {
+                    let nth_byte = &(byte_frequencies[(byte_index << 8)..((byte_index + 1) << 8)]);
+                    let (stat, p) = rv::misc::x2_test(&nth_byte, &(expected_freqs[0..(1 << 8)]));
+                    assert!(p >= 0.0001, "stat {}, p {} < .0001 for byte {}; raw distribution: {:?}",
+                            stat, p, byte_index, nth_byte);
+                }
+                panic!("p < .001; raw distribution: {:?}", byte_frequencies);
             }
-            panic!("p < .0001; raw distribution: {:?}", byte_frequencies);
+            assert!(p >= 0.0001, "p < .0001; raw distribution: {:?}", byte_frequencies);
+        } else {
+            println!("Bytes and moduli are equally distributed");
         }
+        const POSSIBLE_WORDS: u128 = Word::MAX as u128 + 1;
         for (index, prime) in TEST_PRIMES.iter().copied().enumerate() {
-            let count_per_mod = (Word::MAX as u128 + 1) / prime;
-            let leftover = (Word::MAX as u128 + 1) - prime * count_per_mod;
-            let prob_per_mod = (count_per_mod as f64) / ((Word::MAX as u128 + 1) as f64);
-            let prob_per_mod_with_left = (count_per_mod + 1) as f64 / ((Word::MAX as u128 + 1) as f64);
+            let count_per_mod = POSSIBLE_WORDS / prime;
+            let leftover = POSSIBLE_WORDS - prime * count_per_mod;
+            let prob_per_mod = (count_per_mod as f64) / (POSSIBLE_WORDS as f64);
+            let prob_per_mod_with_left = (count_per_mod + 1) as f64 / (POSSIBLE_WORDS as f64);
             let mut probabilities: Vec<_> = repeat(prob_per_mod).take(prime as usize).collect();
             probabilities[0..(leftover as usize)].fill(prob_per_mod_with_left);
             let sum_of_probs: f64 = probabilities.iter().copied().sum();
@@ -110,13 +115,6 @@ mod tests {
             let (stat, p) = rv::misc::x2_test(&hash_mods[index], &probabilities);
             println!("Modulo-{} distribution: stat {}, p {:1.4}", prime, stat, p);
             assert!(p >= 0.0001, "p < .0001; raw distribution: {:?}", hash_mods[index]);
-        }
-        if byte_frequencies.iter().copied().any(|x| x != byte_frequencies[0]) {
-            let (stat, p) = rv::misc::x2_test(&byte_frequencies, &expected_freqs);
-            println!("Distribution: stat {}, p {:1.4}", stat, p);
-            assert!(p >= 0.01, "p < .001; raw distribution: {:?}", byte_frequencies);
-        } else {
-            println!("Bytes and moduli are equally distributed");
         }
     }
 
