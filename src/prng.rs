@@ -30,9 +30,8 @@ where [(); 2 * WORDS_PER_BLOCK]:, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
     type Results = DefaultArray<u64, { 2 * WORDS_PER_BLOCK }>;
 
     fn generate(&mut self, results: &mut Self::Results) {
-        results.0[0] = self.counter;
-        results.0[2 * WORDS_PER_BLOCK - 1] = self.counter.wrapping_add(META_PERMUTOR);
-        self.counter += 1;
+        results.0.fill(self.counter);
+        self.counter = self.counter.wrapping_add(META_PERMUTOR);
         let mut result_blocks = results.0.array_chunks_mut();
         let first = result_blocks.next().unwrap();
         let second = result_blocks.next().unwrap();
@@ -41,6 +40,7 @@ where [(); 2 * WORDS_PER_BLOCK]:, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
             second,
             self.permutor.clone(),
             Self::FEISTEL_ROUNDS_TO_DIFFUSE);
+        self.permutor.copy_from_slice(second);
     }
 }
 
