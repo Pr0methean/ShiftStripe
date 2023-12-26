@@ -11,7 +11,8 @@ fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
             let new_left = right[unit_index].clone();
             let f = shift_stripe(right[unit_index], permutor[unit_index], round);
             right[unit_index] = left[unit_index] ^ f;
-            permutor[unit_index] = permutor[unit_index].rotate_right(11);
+            permutor[unit_index] = permutor[unit_index].rotate_right(11)
+                .wrapping_sub(META_PERMUTOR.wrapping_mul(round as Word).wrapping_add(1));
             left[unit_index] = new_left;
         }
         left.rotate_right(1);
@@ -30,17 +31,19 @@ where [(); 2 * WORDS_PER_BLOCK]:, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
     type Results = DefaultArray<u64, { 2 * WORDS_PER_BLOCK }>;
 
     fn generate(&mut self, results: &mut Self::Results) {
-        results.0.fill(self.counter);
         self.counter = self.counter.wrapping_add(META_PERMUTOR);
         let mut result_blocks = results.0.array_chunks_mut();
         let first = result_blocks.next().unwrap();
+        first[0] = self.counter;
         let second = result_blocks.next().unwrap();
+        second[1] = self.counter;
         shift_stripe_feistel(
             first,
             second,
             self.permutor.clone(),
             Self::FEISTEL_ROUNDS_TO_DIFFUSE);
-        self.permutor.copy_from_slice(second);
+        self.permutor.iter_mut().enumerate().for_each(|(index, word)|
+            *word ^= first[index] ^ second[index]);
     }
 }
 
