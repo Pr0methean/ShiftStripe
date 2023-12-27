@@ -22,9 +22,9 @@ pub const PRIME_ROTATION_AMOUNTS: [u8; NUM_PRIMES] = [
     23, 29, 31];
 
 #[inline]
-pub fn shift_stripe(input: Word, mut permutor: Word, round: u32) -> Word {
+pub fn shift_stripe(input: Word, mut permutor: Word) -> Word {
     let mut out = input;
-    permutor = permutor.rotate_right(round);
+    //permutor = permutor.rotate_right(round);
     for i in 0..8 {
         let rotation_selector = (permutor as usize).wrapping_add(i) % NUM_PRIMES;
         out ^= STRIPE_MASKS[(permutor % 6) as usize];
