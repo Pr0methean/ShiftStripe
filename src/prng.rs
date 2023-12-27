@@ -1,4 +1,5 @@
 use core::mem::size_of;
+use log::info;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
 use crate::block::{compress_block_to_unit, DefaultArray, random_block};
@@ -69,6 +70,8 @@ impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
 impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
     where [(); 2 * WORDS_PER_BLOCK]: {
     pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK> {
+        let seed: [Word; WORDS_PER_BLOCK] = random_block(rng);
+        info!("PRNG seed: {:016x?}", seed);
         Self::new(random_block(rng))
     }
 }

@@ -12,13 +12,13 @@ mod hashing;
 
 use std::error::Error;
 use std::io::Write;
-use rand::{RngCore};
+use rand::{RngCore, thread_rng};
 use rand_core::block::{BlockRng64};
 use crate::prng::ShiftStripeFeistelRngCore;
 
 const WORDS_PER_BLOCK: usize = 2;
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut rng = BlockRng64::new(ShiftStripeFeistelRngCore::new([0; WORDS_PER_BLOCK].try_into()?));
+    let mut rng = BlockRng64::new(ShiftStripeFeistelRngCore::<WORDS_PER_BLOCK>::new_random(&mut thread_rng()));
     let mut stdout = std::io::stdout();
     let mut write_result = Ok(());
     let mut out_buffer = [0u8; 1024];
