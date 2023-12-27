@@ -31,12 +31,12 @@ impl <const WORDS_PER_BLOCK: usize> Hasher for ShiftStripeSponge<WORDS_PER_BLOCK
 
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes.iter().copied() {
-            self.state.rotate_right(1);
-            self.state[WORDS_PER_BLOCK - 1] ^= META_PERMUTOR.wrapping_mul(byte.into());
+            self.state[3 % WORDS_PER_BLOCK] ^= META_PERMUTOR.wrapping_mul(byte.into());
             self.state[0] ^= shift_stripe(
                 self.state[1],
                 self.state[2 % WORDS_PER_BLOCK]
             );
+            self.state.rotate_left(1);
         }
     }
 }
@@ -60,7 +60,7 @@ mod tests {
         // Check distribution modulo more primes than we use as rotation amounts
         const TEST_PRIMES: [u128; 14] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 43, 47];
 
-        println!("Testing hashing with key {:?}", key);
+        println!("Testing hashing with key {:016x?}", key);
         let mut hash_reverses = BTreeMap::new();
         for input in inputs {
             let mut hasher = ShiftStripeSponge::new(key);
