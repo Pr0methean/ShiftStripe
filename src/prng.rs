@@ -32,7 +32,7 @@ where [(); 2 * WORDS_PER_BLOCK]:, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
     type Results = DefaultArray<u64, { 2 * WORDS_PER_BLOCK }>;
 
     fn generate(&mut self, results: &mut Self::Results) {
-        self.counter = self.counter.wrapping_add(META_PERMUTOR);
+        self.counter = self.counter.wrapping_add(META_PERMUTOR | 1);
         let mut result_blocks = results.0.array_chunks_mut();
         let first = result_blocks.next().unwrap();
         first[0] = self.counter;
