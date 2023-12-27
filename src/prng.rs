@@ -5,17 +5,20 @@ use crate::block::{compress_block_to_unit, DefaultArray, random_block};
 use crate::core::{META_PERMUTOR, shift_stripe, Word};
 
 fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
-    left: &mut [Word; WORDS_PER_BLOCK], right: &mut [Word; WORDS_PER_BLOCK], mut permutor: [Word; WORDS_PER_BLOCK], rounds: u32)  {
+        left: &mut [Word; WORDS_PER_BLOCK], right: &mut [Word; WORDS_PER_BLOCK],
+        mut permutor: [Word; WORDS_PER_BLOCK], rounds: u32)  {
+    let mut new_left = [0; WORDS_PER_BLOCK];
+    let mut permutor_shift: Word = 1;
     for round in 0..rounds {
+        new_left[1..WORDS_PER_BLOCK].copy_from_slice(&right[0..(WORDS_PER_BLOCK - 1)]);
+        new_left[0] = right[WORDS_PER_BLOCK - 1];
         for unit_index in 0..WORDS_PER_BLOCK {
-            let new_left = right[unit_index].clone();
             let f = shift_stripe(right[unit_index], permutor[unit_index], round);
             right[unit_index] = left[unit_index] ^ f;
-            permutor[unit_index] = permutor[unit_index].rotate_right(11)
-                .wrapping_sub(META_PERMUTOR.wrapping_mul(round as Word).wrapping_add(1));
-            left[unit_index] = new_left;
+            permutor[unit_index] = permutor[unit_index].rotate_right(11).wrapping_add(permutor_shift);
         }
-        left.rotate_right(1);
+        permutor_shift = permutor_shift.wrapping_sub(META_PERMUTOR);
+        left.copy_from_slice(&new_left);
     }
 }
 
