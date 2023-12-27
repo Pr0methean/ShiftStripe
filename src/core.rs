@@ -17,7 +17,6 @@ pub const STRIPE_MASKS: [Word; 6] = [
 #[inline]
 pub fn shift_stripe(input: Word, mut permutor: Word) -> Word {
     let mut out = input;
-    //permutor = permutor.rotate_right(round);
     for i in 0..6 {
         out ^= STRIPE_MASKS[(permutor % 6) as usize];
         out ^= out.wrapping_add(META_PERMUTOR).rotate_right((3 + 2*i) as u32);
