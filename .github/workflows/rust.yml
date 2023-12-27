@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install TestU01
-      run: sudo apt-get install -y libtestu01-0
+      run: sudo apt-get install -y libtestu01-0-dev
     - name: Install nightly Rust
       uses: actions-rs/toolchain@v1
       with:
@@ -27,4 +27,4 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --verbose
+        args: --verbose --lib
