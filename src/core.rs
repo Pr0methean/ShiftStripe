@@ -23,7 +23,7 @@ pub fn shift_stripe(input: Word, mut permutor: Word) -> Word {
         let swap_selector = ((permutor >> 3) % 6) as usize;
         let swap_mask = STRIPE_MASKS[swap_selector];
         out = (out & swap_mask).shr(1.shl(swap_selector)) | (out & !swap_mask).shl(1.shl(swap_selector));
-        permutor >>= 11;
+        permutor >>= 12;
     }
     out
 }
