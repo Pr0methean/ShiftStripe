@@ -5,6 +5,7 @@
 #![feature(generic_const_exprs)]
 #![feature(iter_collect_into)]
 #![feature(slice_as_chunks)]
+#![feature(optimize_attribute)]
 
 pub mod block;
 pub mod core;

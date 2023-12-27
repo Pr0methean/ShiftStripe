@@ -78,8 +78,15 @@ impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
 
 #[cfg(test)]
 mod tests {
+    use rand_core::block::BlockRng64;
     use crate::core::Word;
     use core::mem::size_of;
+    use std::fmt::Debug;
+    use rand_core::{Error, RngCore};
+    use rusty_fork::rusty_fork_test;
+    use testu01::decorators::ReverseBits;
+    use crate::prng::ShiftStripeFeistelRngCore;
+
     macro_rules! diffusion_small_keys_test {
         ($num_blocks: expr) => {
             diffusion_small_keys_test!($num_blocks, $num_blocks);
@@ -161,5 +168,98 @@ mod tests {
             );
         }
         warnings
+    }
+
+    #[optimize(speed)]
+    fn test_big_crush<T: RngCore + Debug>(prng: T, name: &'static str) {
+        use std::ffi::CString;
+        use testu01::unif01::Unif01Gen;
+
+        let name = CString::new(name.as_bytes().to_vec()).unwrap();
+        let mut u01 = Unif01Gen::new(prng, name);
+        testu01::battery::big_crush(&mut u01);
+        let p_values = testu01::battery::get_pvalues();
+        for (name, p) in p_values.iter() {
+            println!("{:20}: {:0.4}", name, p);
+        }
+        for (name, p) in p_values.into_iter() {
+            assert!(p > 0.001 && p < 0.999, "p value out of range for {}", name);
+        }
+    }
+
+    #[derive(Debug)]
+    struct HalfOutputSelector<T: RngCore> {
+        source: T,
+        upper_half: bool
+    }
+
+    impl <T: RngCore> RngCore for HalfOutputSelector<T> {
+        fn next_u32(&mut self) -> u32 {
+            let source = self.source.next_u64();
+            if self.upper_half {
+                (source >> 32) as u32
+            } else {
+                source as u32
+            }
+        }
+
+        fn next_u64(&mut self) -> u64 {
+            (self.next_u32() as u64) << 32 | (self.next_u32() as u64)
+        }
+
+        fn fill_bytes(&mut self, dest: &mut [u8]) {
+            dest.chunks_mut(size_of::<u32>()).for_each(|chunk|
+                chunk.copy_from_slice(&self.next_u32().to_le_bytes()[0..chunk.len()]));
+        }
+
+        fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+            self.fill_bytes(dest);
+            Ok(())
+        }
+    }
+
+    rusty_fork_test! {
+        #[test]
+        fn test_big_crush_basic() {
+            test_big_crush(BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])), "ShiftStripeSwap");
+        }
+
+        #[test]
+        fn test_big_crush_reversed_bits() {
+            test_big_crush(ReverseBits { rng: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])) },
+                           "ShiftStripeSwap-ReversedBits")
+        }
+
+        #[test]
+        fn test_big_crush_upper_half() {
+            test_big_crush(HalfOutputSelector {
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])),
+                upper_half: true
+            }, "ShiftStripeSwap-UpperHalf")
+        }
+
+        #[test]
+        fn test_big_crush_upper_half_reversed_bits() {
+            test_big_crush(ReverseBits { rng: HalfOutputSelector {
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])),
+                upper_half: true
+            }}, "ShiftStripeSwap-UpperHalf-ReversedBits")
+        }
+
+        #[test]
+        fn test_big_crush_lower_half() {
+            test_big_crush(HalfOutputSelector {
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])),
+                upper_half: false
+            }, "ShiftStripeSwap-LowerHalf")
+        }
+
+        #[test]
+        fn test_big_crush_lower_half_reversed_bits() {
+            test_big_crush(ReverseBits { rng: HalfOutputSelector {
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])),
+                upper_half: false
+            }}, "ShiftStripeSwap-LowerHalf-ReversedBits")
+        }
     }
 }
