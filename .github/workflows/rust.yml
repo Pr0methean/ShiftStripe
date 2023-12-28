@@ -48,6 +48,7 @@ jobs:
       with:
         command: test
         args: --verbose --lib --release -- --skip=test_big_crush
+  bigcrush-basic:
     needs: build
     runs-on: ubuntu-latest
     steps:
