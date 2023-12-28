@@ -18,13 +18,13 @@ jobs:
     - uses: actions/checkout@v4
     - name: Restore cache
       uses: actions/cache/restore@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
       key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: Install TestU01
       run: |
@@ -43,13 +43,13 @@ jobs:
         args: --verbose --lib --release
     - name: Save build and cache
       uses: actions/cache/save@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
       key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
   run-unit-tests:
     needs: build
@@ -62,13 +62,13 @@ jobs:
           sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
-          with:
-            path: |
-              ~/.cargo/bin/
-              ~/.cargo/registry/index/
-              ~/.cargo/registry/cache/
-              ~/.cargo/git/db/
-              target/
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Non-BigCrush tests
         uses: actions-rs/cargo@v1
@@ -86,13 +86,13 @@ jobs:
           sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
-          with:
-            path: |
-              ~/.cargo/bin/
-              ~/.cargo/registry/index/
-              ~/.cargo/registry/cache/
-              ~/.cargo/git/db/
-              target/
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: BigCrush basic
         uses: actions-rs/cargo@v1
@@ -110,13 +110,13 @@ jobs:
           sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
-          with:
-            path: |
-              ~/.cargo/bin/
-              ~/.cargo/registry/index/
-              ~/.cargo/registry/cache/
-              ~/.cargo/git/db/
-              target/
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: BigCrush with reversed bits
         uses: actions-rs/cargo@v1
@@ -134,13 +134,13 @@ jobs:
           sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
-          with:
-            path: |
-              ~/.cargo/bin/
-              ~/.cargo/registry/index/
-              ~/.cargo/registry/cache/
-              ~/.cargo/git/db/
-              target/
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: BigCrush upper half
         uses: actions-rs/cargo@v1
@@ -154,13 +154,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Restore cache
         uses: actions/cache/restore@v3
-          with:
-            path: |
-              ~/.cargo/bin/
-              ~/.cargo/registry/index/
-              ~/.cargo/registry/cache/
-              ~/.cargo/git/db/
-              target/
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Download build
         uses: actions/download-artifact@v3
@@ -183,13 +183,13 @@ jobs:
           sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
-          with:
-            path: |
-              ~/.cargo/bin/
-              ~/.cargo/registry/index/
-              ~/.cargo/registry/cache/
-              ~/.cargo/git/db/
-              target/
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: BigCrush upper half
         uses: actions-rs/cargo@v1
@@ -207,13 +207,13 @@ jobs:
           sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
-          with:
-            path: |
-              ~/.cargo/bin/
-              ~/.cargo/registry/index/
-              ~/.cargo/registry/cache/
-              ~/.cargo/git/db/
-              target/
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: BigCrush lower half
         uses: actions-rs/cargo@v1
