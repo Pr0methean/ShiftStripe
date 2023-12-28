@@ -72,7 +72,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib --release -- --skip=test_big_crush
+          args: +nightly --verbose --lib --release -- --skip=test_big_crush
   bigcrush-basic:
     needs: build
     runs-on: ubuntu-latest
@@ -96,7 +96,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_basic --release
+          args: +nightly --verbose --lib prng::tests::test_big_crush_basic --release
   bigcrush-reversed-bits:
     needs: build
     runs-on: ubuntu-latest
@@ -120,7 +120,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_reversed_bits --release
+          args: +nightly --verbose --lib prng::tests::test_big_crush_reversed_bits --release
   bigcrush-upper-half:
     needs: build
     runs-on: ubuntu-latest
@@ -144,7 +144,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_upper_half --release
+          args: +nightly --verbose --lib prng::tests::test_big_crush_upper_half --release
   bigcrush-lower-half:
     needs: build
     runs-on: ubuntu-latest
@@ -169,7 +169,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_lower_half --release
+          args: +nightly --verbose --lib prng::tests::test_big_crush_lower_half --release
   bigcrush-upper-half-reversed-bits:
     needs: build
     runs-on: ubuntu-latest
@@ -193,7 +193,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_upper_half_reversed_bits --release
+          args: +nightly --verbose --lib prng::tests::test_big_crush_upper_half_reversed_bits --release
   bigcrush-lower-half-reversed-bits:
     needs: build
     runs-on: ubuntu-latest
@@ -217,5 +217,5 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_lower_half_reversed_bits --release
+          args: +nightly --verbose --lib prng::tests::test_big_crush_lower_half_reversed_bits --release
 
