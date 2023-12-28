@@ -16,6 +16,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Restore cache
+      uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: Install TestU01
       run: |
         sudo apt-get update
@@ -31,11 +41,16 @@ jobs:
       with:
         command: build
         args: --verbose --lib --release
-    - name: Output build for other jobs
-      uses: actions/upload-artifact@v3
-      with:
-        name: build-target
-        path: target
+    - name: Save build and cache
+      uses: actions/cache/save@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
   run-unit-tests:
     needs: build
     runs-on: ubuntu-latest
@@ -45,16 +60,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libtestu01-0-dev
-      - name: Install nightly Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - name: Download build
-        uses: actions/download-artifact@v3
-        with:
-          name: build-target
-          path: target
+      - name: Restore cache
+        uses: actions/cache/restore@v3
+          with:
+            path: |
+              ~/.cargo/bin/
+              ~/.cargo/registry/index/
+              ~/.cargo/registry/cache/
+              ~/.cargo/git/db/
+              target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Non-BigCrush tests
         uses: actions-rs/cargo@v1
         with:
@@ -69,16 +84,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libtestu01-0-dev
-      - name: Install nightly Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - name: Download build
-        uses: actions/download-artifact@v3
-        with:
-          name: build-target
-          path: target
+      - name: Restore cache
+        uses: actions/cache/restore@v3
+          with:
+            path: |
+              ~/.cargo/bin/
+              ~/.cargo/registry/index/
+              ~/.cargo/registry/cache/
+              ~/.cargo/git/db/
+              target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: BigCrush basic
         uses: actions-rs/cargo@v1
         with:
@@ -93,16 +108,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libtestu01-0-dev
-      - name: Install nightly Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - name: Download build
-        uses: actions/download-artifact@v3
-        with:
-          name: build-target
-          path: target
+      - name: Restore cache
+        uses: actions/cache/restore@v3
+          with:
+            path: |
+              ~/.cargo/bin/
+              ~/.cargo/registry/index/
+              ~/.cargo/registry/cache/
+              ~/.cargo/git/db/
+              target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: BigCrush with reversed bits
         uses: actions-rs/cargo@v1
         with:
@@ -117,16 +132,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libtestu01-0-dev
-      - name: Install nightly Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - name: Download build
-        uses: actions/download-artifact@v3
-        with:
-          name: build-target
-          path: target
+      - name: Restore cache
+        uses: actions/cache/restore@v3
+          with:
+            path: |
+              ~/.cargo/bin/
+              ~/.cargo/registry/index/
+              ~/.cargo/registry/cache/
+              ~/.cargo/git/db/
+              target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: BigCrush upper half
         uses: actions-rs/cargo@v1
         with:
@@ -137,15 +152,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install TestU01
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libtestu01-0-dev
-      - name: Install nightly Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
+      - name: Restore cache
+        uses: actions/cache/restore@v3
+          with:
+            path: |
+              ~/.cargo/bin/
+              ~/.cargo/registry/index/
+              ~/.cargo/registry/cache/
+              ~/.cargo/git/db/
+              target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Download build
         uses: actions/download-artifact@v3
         with:
@@ -165,16 +181,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libtestu01-0-dev
-      - name: Install nightly Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - name: Download build
-        uses: actions/download-artifact@v3
-        with:
-          name: build-target
-          path: target
+      - name: Restore cache
+        uses: actions/cache/restore@v3
+          with:
+            path: |
+              ~/.cargo/bin/
+              ~/.cargo/registry/index/
+              ~/.cargo/registry/cache/
+              ~/.cargo/git/db/
+              target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: BigCrush upper half
         uses: actions-rs/cargo@v1
         with:
@@ -189,16 +205,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libtestu01-0-dev
-      - name: Install nightly Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - name: Download build
-        uses: actions/download-artifact@v3
-        with:
-          name: build-target
-          path: target
+      - name: Restore cache
+        uses: actions/cache/restore@v3
+          with:
+            path: |
+              ~/.cargo/bin/
+              ~/.cargo/registry/index/
+              ~/.cargo/registry/cache/
+              ~/.cargo/git/db/
+              target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: BigCrush lower half
         uses: actions-rs/cargo@v1
         with:
