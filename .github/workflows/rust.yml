@@ -164,11 +164,6 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Download build
-        uses: actions/download-artifact@v3
-        with:
-          name: build-target
-          path: target
       - name: BigCrush lower half
         uses: actions-rs/cargo@v1
         with:
