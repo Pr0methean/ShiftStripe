@@ -21,6 +21,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libtestu01-0-dev
     - name: Install nightly Rust
+      # TODO: Find a way to avoid having to copy this step to all dependent jobs
       uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
@@ -40,6 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
       - name: Download build
         uses: actions/download-artifact@v3
         with:
@@ -55,6 +61,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
       - name: Download build
         uses: actions/download-artifact@v3
         with:
@@ -70,6 +81,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
       - name: Download build
         uses: actions/download-artifact@v3
         with:
@@ -85,6 +101,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
       - name: Download build
         uses: actions/download-artifact@v3
         with:
@@ -100,6 +121,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
       - name: Download build
         uses: actions/download-artifact@v3
         with:
@@ -115,6 +141,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
       - name: Download build
         uses: actions/download-artifact@v3
         with:
@@ -130,6 +161,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
       - name: Download build
         uses: actions/download-artifact@v3
         with:
