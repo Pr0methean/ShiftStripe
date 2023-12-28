@@ -41,6 +41,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install TestU01
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtestu01-0-dev
       - name: Install nightly Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -61,6 +65,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install TestU01
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtestu01-0-dev
       - name: Install nightly Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -81,6 +89,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install TestU01
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtestu01-0-dev
       - name: Install nightly Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -101,6 +113,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install TestU01
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtestu01-0-dev
       - name: Install nightly Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -121,6 +137,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install TestU01
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtestu01-0-dev
       - name: Install nightly Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -141,6 +161,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install TestU01
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtestu01-0-dev
       - name: Install nightly Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -161,6 +185,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install TestU01
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtestu01-0-dev
       - name: Install nightly Rust
         uses: actions-rs/toolchain@v1
         with:
