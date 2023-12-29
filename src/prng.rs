@@ -77,6 +77,7 @@ impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
 }
 
 #[cfg(test)]
+#[optimize(speed)]
 mod tests {
     use rand_core::block::BlockRng64;
     use crate::core::Word;
@@ -170,7 +171,6 @@ mod tests {
         warnings
     }
 
-    #[optimize(speed)]
     fn test_big_crush<T: RngCore + Debug>(prng: T, name: &'static str) {
         use std::ffi::CString;
         use testu01::unif01::Unif01Gen;
