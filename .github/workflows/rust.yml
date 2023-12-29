@@ -81,6 +81,8 @@ jobs:
             target/
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+      - name: Mark cached builds as fresh
+        run: find target/ -type f -exec touch {} +
       - name: Non-BigCrush tests
         uses: actions-rs/cargo@v1
         with:
@@ -112,6 +114,8 @@ jobs:
             target/
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+      - name: Mark cached builds as fresh
+        run: find target/ -type f -exec touch {} +
       - name: Benchmarks
         uses: actions-rs/cargo@v1
         with:
@@ -143,6 +147,8 @@ jobs:
             target/
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+      - name: Mark cached builds as fresh
+        run: find target/ -type f -exec touch {} +
       - name: BigCrush basic
         uses: actions-rs/cargo@v1
         with:
@@ -174,6 +180,8 @@ jobs:
             target/
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+      - name: Mark cached builds as fresh
+        run: find target/ -type f -exec touch {} +
       - name: BigCrush with reversed bits
         uses: actions-rs/cargo@v1
         with:
@@ -205,6 +213,8 @@ jobs:
             target/
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+      - name: Mark cached builds as fresh
+        run: find target/ -type f -exec touch {} +
       - name: BigCrush upper half
         uses: actions-rs/cargo@v1
         with:
@@ -236,6 +246,8 @@ jobs:
             target/
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+      - name: Mark cached builds as fresh
+        run: find target/ -type f -exec touch {} +
       - name: BigCrush lower half
         uses: actions-rs/cargo@v1
         with:
@@ -267,6 +279,8 @@ jobs:
             target/
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+      - name: Mark cached builds as fresh
+        run: find target/ -type f -exec touch {} +
       - name: BigCrush upper half
         uses: actions-rs/cargo@v1
         with:
@@ -298,6 +312,8 @@ jobs:
             target/
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+      - name: Mark cached builds as fresh
+        run: find target/ -type f -exec touch {} +
       - name: BigCrush lower half
         uses: actions-rs/cargo@v1
         with:
