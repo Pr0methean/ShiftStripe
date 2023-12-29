@@ -6,8 +6,9 @@ edition = "2021"
 [lib]
 bench = true
 
-[[tests]]
-opt-level = 3
+[[bench]]
+name = "benches"
+path = "./benches/src/lib.rs"
 
 [profile.release]
 lto = true

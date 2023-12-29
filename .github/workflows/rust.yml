@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-
+  RUSTFLAGS: '-Clinker-plugin-lto -Clink-arg=-fuse-ld=lld -Clinker=clang-17'
 jobs:
   build:
 
@@ -44,9 +44,7 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --verbose --lib --release --tests
-      env:
-        RUSTFLAGS: '-Clinker-plugin-lto -Clink-arg=-fuse-ld=lld -Clinker=clang-17'
+        args: --verbose --lib --release --tests --benches
     - name: Save build and cache
       uses: actions/cache/save@v3
       with:
@@ -112,9 +110,11 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
       - name: Benchmarks
-        run: |
-          cd benches
-          cargo bench
+        uses: actions-rs/cargo@v1
+        with:
+          command: bench
+          args: --verbose --release
+          toolchain: nightly
   bigcrush-basic:
     needs: build
     runs-on: ubuntu-latest
