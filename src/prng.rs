@@ -194,6 +194,7 @@ mod tests {
     }
 
     impl <T: RngCore> RngCore for HalfOutputSelector<T> {
+        #[inline]
         fn next_u32(&mut self) -> u32 {
             let source = self.source.next_u64();
             if self.upper_half {
