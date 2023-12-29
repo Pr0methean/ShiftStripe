@@ -82,7 +82,9 @@ jobs:
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
       - name: Mark cached builds as fresh
-        run: find target/ -type f -exec touch {} +
+        run: |
+          export NOW=$(date -Iseconds)
+          find target/ -type f -exec touch -d "$NOW" {} +
       - name: Non-BigCrush tests
         uses: actions-rs/cargo@v1
         with:
@@ -115,7 +117,9 @@ jobs:
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
       - name: Mark cached builds as fresh
-        run: find target/ -type f -exec touch {} +
+        run: |
+          export NOW=$(date -Iseconds)
+          find target/ -type f -exec touch -d "$NOW" {} +
       - name: Benchmarks
         uses: actions-rs/cargo@v1
         with:
@@ -148,7 +152,9 @@ jobs:
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
       - name: Mark cached builds as fresh
-        run: find target/ -type f -exec touch {} +
+        run: |
+          export NOW=$(date -Iseconds)
+          find target/ -type f -exec touch -d "$NOW" {} +
       - name: BigCrush basic
         uses: actions-rs/cargo@v1
         with:
@@ -181,7 +187,9 @@ jobs:
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
       - name: Mark cached builds as fresh
-        run: find target/ -type f -exec touch {} +
+        run: |
+          export NOW=$(date -Iseconds)
+          find target/ -type f -exec touch -d "$NOW" {} +
       - name: BigCrush with reversed bits
         uses: actions-rs/cargo@v1
         with:
@@ -214,7 +222,9 @@ jobs:
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
       - name: Mark cached builds as fresh
-        run: find target/ -type f -exec touch {} +
+        run: |
+          export NOW=$(date -Iseconds)
+          find target/ -type f -exec touch -d "$NOW" {} +
       - name: BigCrush upper half
         uses: actions-rs/cargo@v1
         with:
@@ -247,7 +257,9 @@ jobs:
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
       - name: Mark cached builds as fresh
-        run: find target/ -type f -exec touch {} +
+        run: |
+          export NOW=$(date -Iseconds)
+          find target/ -type f -exec touch -d "$NOW" {} +
       - name: BigCrush lower half
         uses: actions-rs/cargo@v1
         with:
@@ -280,7 +292,9 @@ jobs:
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
       - name: Mark cached builds as fresh
-        run: find target/ -type f -exec touch {} +
+        run: |
+          export NOW=$(date -Iseconds)
+          find target/ -type f -exec touch -d "$NOW" {} +
       - name: BigCrush upper half
         uses: actions-rs/cargo@v1
         with:
@@ -313,7 +327,9 @@ jobs:
             Cargo.lock
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
       - name: Mark cached builds as fresh
-        run: find target/ -type f -exec touch {} +
+        run: |
+          export NOW=$(date -Iseconds)
+          find target/ -type f -exec touch -d "$NOW" {} +
       - name: BigCrush lower half
         uses: actions-rs/cargo@v1
         with:
