@@ -40,6 +40,8 @@ jobs:
       with:
         command: build
         args: --verbose --lib --release
+      env:
+        RUSTFLAGS: '-Clinker-plugin-lto'
     - name: Save build and cache
       uses: actions/cache/save@v3
       with:
