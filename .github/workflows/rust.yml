@@ -87,7 +87,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib --release -- --skip=test_big_crush
+          args: --offline --verbose --lib --release -- --skip=test_big_crush
           toolchain: nightly
   run-benchmarks:
     needs: build
@@ -120,7 +120,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: bench
-          args: --verbose --release
+          args: --offline --verbose --release
           toolchain: nightly
   bigcrush-basic:
     needs: build
@@ -153,7 +153,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_basic --release
+          args: --offline --verbose --lib prng::tests::test_big_crush_basic --release
           toolchain: nightly
   bigcrush-reversed-bits:
     needs: build
@@ -186,7 +186,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_reversed_bits --release
+          args: --offline --verbose --lib prng::tests::test_big_crush_reversed_bits --release
           toolchain: nightly
   bigcrush-upper-half:
     needs: build
@@ -219,7 +219,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_upper_half --release
+          args: --offline --verbose --lib prng::tests::test_big_crush_upper_half --release
           toolchain: nightly
   bigcrush-lower-half:
     needs: build
@@ -252,7 +252,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_lower_half --release
+          args: --offline --verbose --lib prng::tests::test_big_crush_lower_half --release
           toolchain: nightly
   bigcrush-upper-half-reversed-bits:
     needs: build
@@ -285,7 +285,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_upper_half_reversed_bits --release
+          args: --offline --verbose --lib prng::tests::test_big_crush_upper_half_reversed_bits --release
           toolchain: nightly
   bigcrush-lower-half-reversed-bits:
     needs: build
@@ -318,6 +318,6 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --lib prng::tests::test_big_crush_lower_half_reversed_bits --release
+          args: --offline --verbose --lib prng::tests::test_big_crush_lower_half_reversed_bits --release
           toolchain: nightly
 
