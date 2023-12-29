@@ -21,6 +21,7 @@ fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug)]
 pub struct ShiftStripeFeistelRngCore<const WORDS_PER_BLOCK: usize> {
     permutor: [Word; WORDS_PER_BLOCK],
@@ -188,6 +189,7 @@ mod tests {
     }
 
     #[derive(Debug)]
+    #[repr(C)]
     struct HalfOutputSelector<T: RngCore> {
         source: T,
         upper_half: bool
