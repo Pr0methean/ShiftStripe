@@ -66,10 +66,6 @@ jobs:
         with:
           toolchain: nightly
           override: true
-      - name: Install TestU01
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
         with:
@@ -101,10 +97,6 @@ jobs:
         with:
           toolchain: nightly
           override: true
-      - name: Install TestU01
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
         with:
@@ -136,10 +128,6 @@ jobs:
         with:
           toolchain: nightly
           override: true
-      - name: Install TestU01
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
         with:
@@ -171,10 +159,6 @@ jobs:
         with:
           toolchain: nightly
           override: true
-      - name: Install TestU01
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
         with:
@@ -206,10 +190,6 @@ jobs:
         with:
           toolchain: nightly
           override: true
-      - name: Install TestU01
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
         with:
@@ -241,10 +221,6 @@ jobs:
         with:
           toolchain: nightly
           override: true
-      - name: Install TestU01
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
         with:
@@ -276,10 +252,6 @@ jobs:
         with:
           toolchain: nightly
           override: true
-      - name: Install TestU01
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
         with:
@@ -311,10 +283,6 @@ jobs:
         with:
           toolchain: nightly
           override: true
-      - name: Install TestU01
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libtestu01-0-dev
       - name: Restore cache
         uses: actions/cache/restore@v3
         with:
