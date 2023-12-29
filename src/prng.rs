@@ -78,7 +78,6 @@ impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
 }
 
 #[cfg(test)]
-#[optimize(speed)]
 mod tests {
     use rand_core::block::BlockRng64;
     use crate::core::Word;

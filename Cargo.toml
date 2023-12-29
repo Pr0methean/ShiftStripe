@@ -6,6 +6,9 @@ edition = "2021"
 [lib]
 bench = true
 
+[[tests]]
+opt-level = 3
+
 [profile.release]
 lto = true
 codegen-units = 1
