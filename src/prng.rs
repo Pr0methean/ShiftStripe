@@ -7,7 +7,7 @@ use crate::core::{META_PERMUTOR, shift_stripe, Word};
 
 fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
         left: &mut [Word; WORDS_PER_BLOCK], right: &mut [Word; WORDS_PER_BLOCK],
-        mut permutor: [Word; WORDS_PER_BLOCK], rounds: u32)  {
+        permutor: &mut [Word; WORDS_PER_BLOCK], rounds: u32)  {
     let mut new_left = [0; WORDS_PER_BLOCK];
     for round in 0..rounds {
         new_left[1..WORDS_PER_BLOCK].copy_from_slice(&right[0..(WORDS_PER_BLOCK - 1)]);
@@ -43,10 +43,10 @@ where [(); 2 * WORDS_PER_BLOCK]:, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
         shift_stripe_feistel(
             first,
             second,
-            self.permutor.clone(),
+            &mut self.permutor,
             Self::FEISTEL_ROUNDS_TO_DIFFUSE);
-        self.permutor.iter_mut().enumerate().for_each(|(index, word)|
-            *word ^= first[index] ^ second[index]);
+        self.permutor[0] ^= first[0];
+        self.permutor[1] ^= second[1];
     }
 }
 
@@ -146,8 +146,8 @@ mod tests {
         let mut prev2: [Word; WORDS_PER_BLOCK] = int_to_block(previn2);
         let mut this1: [Word; WORDS_PER_BLOCK] = int_to_block(thisin1);
         let mut this2: [Word; WORDS_PER_BLOCK] = int_to_block(thisin2);
-        shift_stripe_feistel(&mut prev1, &mut prev2, permutor, rounds);
-        shift_stripe_feistel(&mut this1, &mut this2, permutor, rounds);
+        shift_stripe_feistel(&mut prev1, &mut prev2, &mut permutor.clone(), rounds);
+        shift_stripe_feistel(&mut this1, &mut this2, &mut permutor.clone(), rounds);
         let xor1 = xor_blocks(&prev1, &this1);
         let xor2 = xor_blocks(&prev2, &this2);
         let bits_in_block = 8 * size_of::<[Word; WORDS_PER_BLOCK]>();
