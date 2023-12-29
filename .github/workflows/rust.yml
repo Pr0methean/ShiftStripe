@@ -124,7 +124,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: bench
-          args: --offline --verbose --release
+          args: --offline --verbose
           toolchain: nightly
   bigcrush-basic:
     needs: build
