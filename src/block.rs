@@ -37,10 +37,12 @@ impl <T, const N: usize> Fill for DefaultArray<T, N> where T: Default, Standard:
     }
 }
 
+#[inline]
 pub fn compress_block_to_unit<const WORDS_PER_BLOCK: usize>(block: &[Word; WORDS_PER_BLOCK]) -> Word {
     block.iter().copied().fold(0, |x, y| shift_stripe(x, y))
 }
 
+#[inline]
 pub fn bytes_to_block<T: Iterator<Item=u8>, const WORDS_PER_BLOCK: usize>(bytes: T) -> [Word; WORDS_PER_BLOCK] {
     bytes.into_iter().array_chunks().map(Word::from_be_bytes).collect::<Vec<_>>().try_into().unwrap()
 }
@@ -56,6 +58,7 @@ pub fn random_block<T: Rng, const WORDS_PER_BLOCK: usize>(rand: &mut T) -> [Word
     block.0
 }
 
+#[inline]
 pub fn int_to_block<const WORDS_PER_BLOCK: usize>(input: i128) -> [Word; WORDS_PER_BLOCK]
     where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
     let mut bytes = [0u8; size_of::<[Word; WORDS_PER_BLOCK]>()];
@@ -69,6 +72,7 @@ pub fn int_to_block<const WORDS_PER_BLOCK: usize>(input: i128) -> [Word; WORDS_P
 }
 
 #[cfg(test)]
+#[inline]
 pub(crate) fn xor_blocks<const WORDS_PER_BLOCK: usize>(block1: &[Word; WORDS_PER_BLOCK], block2: &[Word; WORDS_PER_BLOCK]) -> [Word; WORDS_PER_BLOCK] {
     let xored_vec: Vec<_> = block1.iter().zip(block2.iter()).map(|(x, y)| x ^ y).collect();
     xored_vec.try_into().unwrap()
