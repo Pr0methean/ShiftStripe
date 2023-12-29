@@ -8,7 +8,6 @@ bench = true
 
 [[bench]]
 name = "benches"
-path = "./benches/src/lib.rs"
 
 [profile.release]
 lto = true
