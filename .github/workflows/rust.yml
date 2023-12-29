@@ -41,7 +41,7 @@ jobs:
         command: build
         args: --verbose --lib --release
       env:
-        RUSTFLAGS: '-Clinker-plugin-lto -Clink-arg=-fuse-ld=lld -Clinker=clang-15'
+        RUSTFLAGS: '-Clinker-plugin-lto -Clink-arg=-fuse-ld=lld -Clinker=clang-17'
     - name: Save build and cache
       uses: actions/cache/save@v3
       with:
