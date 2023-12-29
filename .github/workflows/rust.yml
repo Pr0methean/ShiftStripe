@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: '-l static=testu01 -Clinker-plugin-lto -Clink-arg=-fuse-ld=lld -Clinker=clang-17'
+  RUSTFLAGS: '-Clinker-plugin-lto -Clink-arg=-fuse-ld=lld -Clinker=clang-17'
 jobs:
   build:
 
