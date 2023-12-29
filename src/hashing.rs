@@ -25,10 +25,12 @@ impl <const WORDS_PER_BLOCK: usize> ShiftStripeSponge<WORDS_PER_BLOCK> {
 
 impl <const WORDS_PER_BLOCK: usize> Hasher for ShiftStripeSponge<WORDS_PER_BLOCK>
     where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+    #[inline]
     fn finish(&self) -> u64 {
         compress_block_to_unit(&self.state)
     }
 
+    #[inline]
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes.iter().copied() {
             self.state[3 % WORDS_PER_BLOCK] ^= META_PERMUTOR.wrapping_mul(byte.into());
