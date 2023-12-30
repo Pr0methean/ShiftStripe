@@ -2,7 +2,7 @@ use core::mem::size_of;
 use log::info;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
-use crate::block::{random_block, xor_blocks};
+use crate::block::{random_block};
 use crate::core::{META_PERMUTOR, shift_stripe, Word};
 
 fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
@@ -38,7 +38,7 @@ where [(); 2 * WORDS_PER_BLOCK]:, [Word; WORDS_PER_BLOCK]: Default, [(); size_of
         let mut state_blocks = self.state.array_chunks_mut();
         let first: &mut [Word; WORDS_PER_BLOCK] = state_blocks.next().unwrap();
         let second = state_blocks.next().unwrap();
-        let mut temp_block = xor_blocks(first, second);
+        let mut temp_block = [0; WORDS_PER_BLOCK];
         first.iter().zip(second.iter_mut()).enumerate().for_each(|(index, (first, second))|
             temp_block[index] = shift_stripe(*first, second)
         );
