@@ -24,7 +24,7 @@ jobs:
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
     - name: Install Clang 17
       run: |
         wget https://apt.llvm.org/llvm.sh
@@ -55,7 +55,7 @@ jobs:
           ~/.cargo/git/db/
           target/
           Cargo.lock
-        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
     - name: Upload optimization remarks
       uses: actions/upload-artifact@v4
       with:
@@ -82,7 +82,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -113,7 +113,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -144,7 +144,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -175,7 +175,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -206,7 +206,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -237,7 +237,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -268,7 +268,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -299,7 +299,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
