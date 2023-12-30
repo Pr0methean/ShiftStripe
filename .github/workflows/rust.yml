@@ -59,7 +59,7 @@ jobs:
     - name: Upload optimization remarks
       uses: actions/upload-artifact@v4
       with:
-        path: ~/remarks/**/*.*
+        path: ~/remarks/
         if-no-files-found: error
   run-unit-tests:
     needs: build
