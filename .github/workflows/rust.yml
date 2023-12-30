@@ -30,10 +30,16 @@ jobs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         sudo ./llvm.sh 17
-    - name: Install TestU01
+    - name: Build TestU01
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libtestu01-0-dev
+        sudo apt-add-repository -s multiverse
+        apt-get source libtestu01-0-dev
+        cd testu01-*
+        export CFLAGS="-flto -O3"
+        export CC=clang-17
+        dpkg-buildpackage -rfakeroot -b
+        find _build -iname *.o | xargs ar crus ../libtestu01.a
+        cd ..
     - name: Install nightly Rust
       # TODO: Find a way to avoid having to copy this step to all dependent jobs
       uses: actions-rs/toolchain@v1
