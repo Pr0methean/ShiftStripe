@@ -20,10 +20,10 @@ rand = "0.8.5"
 rand_core = "0.6.4"
 rayon = "1.8.0"
 log = "0.4.20"
-rv = "0.16.1"
 itertools = "0.12.0"
 
 [dev-dependencies]
 paste = "1.0.14"
 testu01 = { git = "https://github.com/dzamlo/rust-testu01.git" }
 rusty-fork = "0.3.0"
+rv = "0.16.1"
