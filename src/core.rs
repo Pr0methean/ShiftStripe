@@ -15,7 +15,7 @@ pub const STRIPE_MASKS: [Word; 6] = [
 ];
 
 #[inline]
-pub fn shift_stripe(input: Word, mut permutor: &mut Word) -> Word {
+pub fn shift_stripe(input: Word, permutor: &mut Word) -> Word {
     let mut out = input;
     for i in 0..5 {
         out ^= (out ^ STRIPE_MASKS[(*permutor % 6) as usize])

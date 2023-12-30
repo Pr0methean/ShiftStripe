@@ -64,8 +64,13 @@ pub fn random_block<T: Rng, const WORDS_PER_BLOCK: usize>(rand: &mut T) -> [Word
 #[inline]
 pub fn int_to_block<const WORDS_PER_BLOCK: usize>(input: i128) -> [Word; WORDS_PER_BLOCK]
     where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+    if WORDS_PER_BLOCK == 1 {
+        let mut out = [0; WORDS_PER_BLOCK];
+        out[0] = input as Word;
+        return out;
+    }
     let mut bytes = [0u8; size_of::<[Word; WORDS_PER_BLOCK]>()];
-    let first_byte = size_of::<[Word; WORDS_PER_BLOCK]>() - size_of::<u128>();
+    let first_byte = size_of::<[Word; WORDS_PER_BLOCK]>() - size_of::<i128>();
     bytes[first_byte..].copy_from_slice(input.to_be_bytes().as_slice());
     if input < 0 {
         let sign_extend = repeat(u8::MAX).take(first_byte).collect::<Vec<_>>();

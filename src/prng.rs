@@ -165,7 +165,7 @@ mod tests {
             || bits_difference_2 < 16 || bits_difference_2 > bits_in_block - 16
             || (bits_difference_1 + bits_difference_2) < 64
             || (bits_difference_1 + bits_difference_2) > (2 * bits_in_block) - 64 {
-            warnings.push(format!("Warning: for permutor {} and inputs ({}, {}) and ({}, {}), outputs ({:?}, {:?}) and ({:?}, {:?}) differ by ({:?}, {:?})",
+            warnings.push(format!("Warning: for permutor {} and inputs ({}, {}) and ({}, {}), outputs ({:032x?}, {:032x?}) and ({:032x?}, {:032x?}) differ by ({:032x?}, {:032x?})",
                                   permutor_int, previn1, previn2, thisin1, thisin2,
                                   &prev1, &prev2,
                                   &this1, &this2,
