@@ -24,7 +24,7 @@ jobs:
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', '**/*.rs') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
     - name: Install Clang 17
       run: |
         wget https://apt.llvm.org/llvm.sh
@@ -55,7 +55,7 @@ jobs:
           ~/.cargo/git/db/
           target/
           Cargo.lock
-        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', '**/*.rs') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
   run-unit-tests:
     needs: build
     runs-on: ubuntu-latest
@@ -80,7 +80,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', '**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -115,7 +115,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', '**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -150,7 +150,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', '**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -185,7 +185,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', '**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -220,7 +220,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', '**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -255,7 +255,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', '**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -290,7 +290,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', '**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
@@ -325,7 +325,7 @@ jobs:
             ~/.cargo/git/db/
             target/
             Cargo.lock
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', '**/*.rs') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs') }}
       - name: Mark cached builds as fresh
         run: |
           export NOW=$(date -Iseconds)
