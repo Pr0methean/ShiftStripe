@@ -2,7 +2,7 @@ use core::mem::size_of;
 use log::info;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
-use crate::block::{random_block};
+use crate::block::{random_block, xor_blocks};
 use crate::core::{META_PERMUTOR, shift_stripe, Word};
 
 fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
@@ -44,9 +44,11 @@ where [(); 2 * WORDS_PER_BLOCK]:, [Word; WORDS_PER_BLOCK]: Default, [(); size_of
             &mut temp_block,
             second,
             Self::FEISTEL_ROUNDS_TO_DIFFUSE);
-        first.iter().zip(second).enumerate().for_each(|(index, (first, second))|
+        first.iter().zip(temp_block.iter_mut()).enumerate().for_each(|(index, (first, second))|
             results[index] = shift_stripe(*first, second)
         );
+        first.rotate_right(1);
+        *first = xor_blocks(first, second);
     }
 }
 
