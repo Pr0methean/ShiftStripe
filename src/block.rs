@@ -39,7 +39,7 @@ impl <T, const N: usize> Fill for DefaultArray<T, N> where T: Default, Standard:
 
 #[inline]
 pub fn compress_block_to_unit<const WORDS_PER_BLOCK: usize>(block: &[Word; WORDS_PER_BLOCK]) -> Word {
-    block.iter().copied().fold(0, |x, y| shift_stripe(x, y))
+    block.iter().copied().fold(0, |x, mut y| shift_stripe(x, &mut y))
 }
 
 #[inline]

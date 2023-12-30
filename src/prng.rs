@@ -2,7 +2,7 @@ use core::mem::size_of;
 use log::info;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
-use crate::block::{compress_block_to_unit, DefaultArray, random_block};
+use crate::block::{random_block};
 use crate::core::{META_PERMUTOR, shift_stripe, Word};
 
 fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
@@ -13,7 +13,7 @@ fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
         new_left[1..WORDS_PER_BLOCK].copy_from_slice(&right[0..(WORDS_PER_BLOCK - 1)]);
         new_left[0] = right[WORDS_PER_BLOCK - 1];
         for unit_index in 0..WORDS_PER_BLOCK {
-            let f = shift_stripe(right[unit_index], permutor[unit_index]);
+            let f = shift_stripe(right[unit_index], &mut permutor[unit_index]);
             right[unit_index] = left[unit_index] ^ f;
             permutor[unit_index] = permutor[unit_index].wrapping_add(META_PERMUTOR).rotate_right(13 + 2 * round);
         }
@@ -23,54 +23,50 @@ fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
 
 #[repr(C)]
 #[derive(Clone, Debug)]
-pub struct ShiftStripeFeistelRngCore<const WORDS_PER_BLOCK: usize> {
-    permutor: [Word; WORDS_PER_BLOCK],
-    counter: Word
+pub struct ShiftStripeFeistelRngCore<const WORDS_PER_BLOCK: usize>
+where [(); 2 * WORDS_PER_BLOCK]: {
+    state: [Word; 2 * WORDS_PER_BLOCK]
 }
 
 impl <const WORDS_PER_BLOCK: usize> BlockRngCore for ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
-where [(); 2 * WORDS_PER_BLOCK]:, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+where [(); 2 * WORDS_PER_BLOCK]:, [Word; WORDS_PER_BLOCK]: Default, [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
     type Item = Word;
-    type Results = DefaultArray<u64, { 2 * WORDS_PER_BLOCK }>;
+    type Results = [Word; WORDS_PER_BLOCK];
 
     #[inline]
     fn generate(&mut self, results: &mut Self::Results) {
-        self.counter = self.counter.wrapping_add(META_PERMUTOR | 1);
-        let mut result_blocks = results.0.array_chunks_mut();
-        let first = result_blocks.next().unwrap();
-        first[0] = self.counter;
-        let second = result_blocks.next().unwrap();
-        second[1] = self.counter;
+        let mut state_blocks = self.state.array_chunks_mut();
+        let first = state_blocks.next().unwrap();
+        let second = state_blocks.next().unwrap();
+        let mut temp_block = [0; WORDS_PER_BLOCK];
         shift_stripe_feistel(
             first,
+            &mut temp_block,
             second,
-            &mut self.permutor,
             Self::FEISTEL_ROUNDS_TO_DIFFUSE);
-        self.permutor[0] ^= first[0];
-        self.permutor[1] ^= second[1];
+        first.iter().zip(second).enumerate().for_each(|(index, (first, second))|
+            results[index] = shift_stripe(*first, second)
+        );
     }
 }
 
 impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
-    where [(); 2 * WORDS_PER_BLOCK]: {
+    where [(); 2 * WORDS_PER_BLOCK]:, [Word; WORDS_PER_BLOCK]: Default {
     // TODO: Find out why 2 or 3 blocks still require 4 rounds.
     const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = if WORDS_PER_BLOCK <= 4 {
         4
     } else {
         WORDS_PER_BLOCK
     } as u32;
-    pub fn new(seed: [Word; WORDS_PER_BLOCK]) -> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK> {
-        let permutor = seed;
-        let counter = compress_block_to_unit(&seed);
+    pub fn new(seed: [Word; 2 * WORDS_PER_BLOCK]) -> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK> {
         ShiftStripeFeistelRngCore {
-            permutor,
-            counter
+            state: seed
         }
     }
 }
 
 impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
-    where [(); 2 * WORDS_PER_BLOCK]: {
+    where [(); 2 * WORDS_PER_BLOCK]:, [Word; WORDS_PER_BLOCK]: Default {
     pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK> {
         let seed: [Word; WORDS_PER_BLOCK] = random_block(rng);
         info!("PRNG seed: {:016x?}", seed);
@@ -224,19 +220,19 @@ mod tests {
     rusty_fork_test! {
         #[test]
         fn test_big_crush_basic() {
-            test_big_crush(BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])), "ShiftStripeSwap");
+            test_big_crush(BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])), "ShiftStripeSwap");
         }
 
         #[test]
         fn test_big_crush_reversed_bits() {
-            test_big_crush(ReverseBits { rng: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])) },
+            test_big_crush(ReverseBits { rng: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])) },
                            "ShiftStripeSwap-ReversedBits")
         }
 
         #[test]
         fn test_big_crush_upper_half() {
             test_big_crush(HalfOutputSelector {
-                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])),
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])),
                 upper_half: true
             }, "ShiftStripeSwap-UpperHalf")
         }
@@ -244,7 +240,7 @@ mod tests {
         #[test]
         fn test_big_crush_upper_half_reversed_bits() {
             test_big_crush(ReverseBits { rng: HalfOutputSelector {
-                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])),
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])),
                 upper_half: true
             }}, "ShiftStripeSwap-UpperHalf-ReversedBits")
         }
@@ -252,7 +248,7 @@ mod tests {
         #[test]
         fn test_big_crush_lower_half() {
             test_big_crush(HalfOutputSelector {
-                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])),
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])),
                 upper_half: false
             }, "ShiftStripeSwap-LowerHalf")
         }
@@ -260,7 +256,7 @@ mod tests {
         #[test]
         fn test_big_crush_lower_half_reversed_bits() {
             test_big_crush(ReverseBits { rng: HalfOutputSelector {
-                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 2])),
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])),
                 upper_half: false
             }}, "ShiftStripeSwap-LowerHalf-ReversedBits")
         }

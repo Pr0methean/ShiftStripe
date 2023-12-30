@@ -36,7 +36,7 @@ impl <const WORDS_PER_BLOCK: usize> Hasher for ShiftStripeSponge<WORDS_PER_BLOCK
             self.state[3 % WORDS_PER_BLOCK] ^= META_PERMUTOR.wrapping_mul(byte.into());
             self.state[0] ^= shift_stripe(
                 self.state[1],
-                self.state[2 % WORDS_PER_BLOCK]
+                &mut self.state[2 % WORDS_PER_BLOCK]
             );
             self.state.rotate_left(1);
         }
