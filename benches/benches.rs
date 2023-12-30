@@ -30,6 +30,7 @@ mod bench {
         b.iter(|| rng.next_u64());
     }
 
+    prng_bench!(01);
     prng_bench!(02);
     prng_bench!(03);
     prng_bench!(04);
