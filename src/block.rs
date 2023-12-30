@@ -29,6 +29,7 @@ impl <T, const N: usize> AsRef<[T]> for DefaultArray<T, N> where T: Default {
 }
 
 impl <T, const N: usize> Fill for DefaultArray<T, N> where T: Default, Standard: Distribution<T> {
+    #[inline]
     fn try_fill<R: Rng + ?Sized>(&mut self, rng: &mut R) -> Result<(), Error> {
         for element in self.0.iter_mut() {
             *element = rng.gen();
@@ -47,11 +48,13 @@ pub fn bytes_to_block<T: Iterator<Item=u8>, const WORDS_PER_BLOCK: usize>(bytes:
     bytes.into_iter().array_chunks().map(Word::from_be_bytes).collect::<Vec<_>>().try_into().unwrap()
 }
 
+#[inline]
 pub fn block_to_bytes<const WORDS_PER_BLOCK: usize>(block: [Word; WORDS_PER_BLOCK]) -> [u8; size_of::<[Word; WORDS_PER_BLOCK]>()] {
     let byte_vec: Vec<_> = block.iter().copied().flat_map(Word::to_be_bytes).collect();
     byte_vec.try_into().unwrap()
 }
 
+#[inline]
 pub fn random_block<T: Rng, const WORDS_PER_BLOCK: usize>(rand: &mut T) -> [Word; WORDS_PER_BLOCK] {
     let mut block = DefaultArray::default();
     rand.fill(&mut block);
@@ -71,7 +74,6 @@ pub fn int_to_block<const WORDS_PER_BLOCK: usize>(input: i128) -> [Word; WORDS_P
     bytes_to_block(bytes.into_iter())
 }
 
-#[cfg(test)]
 #[inline]
 pub(crate) fn xor_blocks<const WORDS_PER_BLOCK: usize>(block1: &[Word; WORDS_PER_BLOCK], block2: &[Word; WORDS_PER_BLOCK]) -> [Word; WORDS_PER_BLOCK] {
     let xored_vec: Vec<_> = block1.iter().zip(block2.iter()).map(|(x, y)| x ^ y).collect();
