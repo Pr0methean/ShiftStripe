@@ -227,19 +227,19 @@ mod tests {
     rusty_fork_test! {
         #[test]
         fn test_big_crush_basic() {
-            test_big_crush(BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])), "ShiftStripeSwap");
+            test_big_crush(BlockRng64::new(ShiftStripeFeistelRngCore::<1>::new([0; 2])), "ShiftStripeSwap");
         }
 
         #[test]
         fn test_big_crush_reversed_bits() {
-            test_big_crush(ReverseBits { rng: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])) },
+            test_big_crush(ReverseBits { rng: BlockRng64::new(ShiftStripeFeistelRngCore::<1>::new([0; 2])) },
                            "ShiftStripeSwap-ReversedBits")
         }
 
         #[test]
         fn test_big_crush_upper_half() {
             test_big_crush(HalfOutputSelector {
-                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])),
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<1>::new([0; 2])),
                 upper_half: true
             }, "ShiftStripeSwap-UpperHalf")
         }
@@ -247,7 +247,7 @@ mod tests {
         #[test]
         fn test_big_crush_upper_half_reversed_bits() {
             test_big_crush(ReverseBits { rng: HalfOutputSelector {
-                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])),
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<1>::new([0; 2])),
                 upper_half: true
             }}, "ShiftStripeSwap-UpperHalf-ReversedBits")
         }
@@ -255,7 +255,7 @@ mod tests {
         #[test]
         fn test_big_crush_lower_half() {
             test_big_crush(HalfOutputSelector {
-                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])),
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<1>::new([0; 2])),
                 upper_half: false
             }, "ShiftStripeSwap-LowerHalf")
         }
@@ -263,7 +263,7 @@ mod tests {
         #[test]
         fn test_big_crush_lower_half_reversed_bits() {
             test_big_crush(ReverseBits { rng: HalfOutputSelector {
-                source: BlockRng64::new(ShiftStripeFeistelRngCore::<2>::new([0; 4])),
+                source: BlockRng64::new(ShiftStripeFeistelRngCore::<1>::new([0; 2])),
                 upper_half: false
             }}, "ShiftStripeSwap-LowerHalf-ReversedBits")
         }
