@@ -44,11 +44,11 @@ where [(); 2 * WORDS_PER_BLOCK]:, [Word; WORDS_PER_BLOCK]: Default, [(); size_of
             &mut temp_block,
             second,
             Self::FEISTEL_ROUNDS_TO_DIFFUSE);
+        drop(state_blocks);
         if WORDS_PER_BLOCK > 1 {
-            drop(state_blocks);
             self.state.rotate_right(1);
-            state_blocks = self.state.array_chunks_mut();
         }
+        state_blocks = self.state.array_chunks_mut();
         let first: &mut [Word; WORDS_PER_BLOCK] = state_blocks.next().unwrap();
         temp_block.iter().zip(first.iter_mut()).enumerate().for_each(|(index, (first, second))|
             results[index] = shift_stripe(*first, second)
