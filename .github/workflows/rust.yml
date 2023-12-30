@@ -44,7 +44,7 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --verbose --lib --release --tests --benches
+        args: +nightly --verbose --lib --release --tests --benches
     - name: Save build and cache
       uses: actions/cache/save@v3
       with:
