@@ -18,17 +18,17 @@ jobs:
     - uses: actions/checkout@v4
     - name: Generate cache key for TestU01 build
       run: apt-cache policy libtestu01-0-dev > libtestu01-cached-policy.txt
+    - name: Install Clang 17
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 17
     - name: Restore TestU01 build cache
       id: restore-cache-testu01
       uses: actions/cache/restore@v3
       with:
         key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt', '.github/workflows/rust.yml') }}
         path: /usr/local/lib/libtestu01.a
-    - name: Install Clang 17
-      run: |
-        wget https://apt.llvm.org/llvm.sh
-        chmod +x llvm.sh
-        sudo ./llvm.sh 17
     - name: Build TestU01
       if: steps.restore-cache-testu01.outputs.cache-hit != 'true'
       run: |
