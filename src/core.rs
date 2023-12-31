@@ -1,5 +1,4 @@
 use core::ops::{Shl, Shr};
-use tailcall::tailcall;
 
 pub type Word = u64;
 
@@ -17,7 +16,6 @@ pub const STRIPE_MASKS: [Word; 6] = [
 
 const ROTATION_AMOUNTS: [u32; 4] = [2,3,5,7];
 
-#[tailcall]
 #[inline]
 fn shuffle<T>(n : &mut Word, a : &mut [T]) {
     for i in (1..a.len()).rev() {
