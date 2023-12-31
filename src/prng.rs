@@ -12,11 +12,12 @@ fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
     for round in 0..rounds {
         new_left[1..WORDS_PER_BLOCK].copy_from_slice(&right[0..(WORDS_PER_BLOCK - 1)]);
         new_left[0] = right[WORDS_PER_BLOCK - 1];
-        let f = right.iter().copied().zip(permutor.iter().copied())
-            .map(|(right, permutor)| shift_stripe(right, permutor));
-        right.copy_from_slice(&left.iter().copied().zip(f).map(|(left, f)| left ^ f).collect::<Vec<_>>());
-        permutor.iter_mut().for_each(|permutor|
-            *permutor = permutor.wrapping_add(META_PERMUTOR).rotate_right(13 + 2 * round));
+        left.iter_mut().zip(right.iter_mut()).zip(permutor.iter_mut())
+            .for_each(|((left, right), permutor)| {
+                let f = shift_stripe(*right, *permutor);
+                *right = *left ^ f;
+                *permutor = permutor.wrapping_add(META_PERMUTOR).rotate_right(13 + 2 * round);
+        });
         left.copy_from_slice(&new_left);
     }
 }
