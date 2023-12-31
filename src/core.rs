@@ -16,10 +16,10 @@ pub const STRIPE_MASKS: [Word; 6] = [
 
 #[inline]
 fn shuffle<T>(n : &mut Word, a : &mut [T]) {
-    for i in (1..a.len()).rev() {
+    for i in (1..(a.len() as Word)).rev() {
         let j = *n % (i + 1) as Word;
         *n /= (i + 1);
-        a.swap(j as usize, i);
+        a.swap(j as usize, i as usize);
     }
 }
 
