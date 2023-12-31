@@ -13,7 +13,7 @@ fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
         new_left[1..WORDS_PER_BLOCK].copy_from_slice(&right[0..(WORDS_PER_BLOCK - 1)]);
         new_left[0] = right[WORDS_PER_BLOCK - 1];
         for unit_index in 0..WORDS_PER_BLOCK {
-            let f = shift_stripe(right[unit_index], &mut permutor[unit_index]);
+            let f = shift_stripe(right[unit_index], permutor[unit_index]);
             right[unit_index] = left[unit_index] ^ f;
         }
         left.copy_from_slice(&new_left);
