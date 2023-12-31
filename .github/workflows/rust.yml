@@ -36,7 +36,7 @@ jobs:
         apt-get source libtestu01-0-dev
         sudo apt-get build-dep libtestu01-0-dev
         cd testu01-*
-        export CFLAGS="-flto -O3"
+        export CFLAGS="-flto -ffat-lto-objects -O3"
         export CC=clang-17
         dpkg-buildpackage -rfakeroot -b
         find _build -iname *.o | xargs ar crus ../libtestu01.a
