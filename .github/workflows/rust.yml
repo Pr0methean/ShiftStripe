@@ -43,6 +43,7 @@ jobs:
       run: |
         sudo apt-add-repository -s multiverse
         apt-get source libtestu01-0-dev
+        rm -rf testu01-*
         sudo apt-get build-dep libtestu01-0-dev
         dpkg-source -x testu01*.dsc
         cd testu01-*
