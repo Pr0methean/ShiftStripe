@@ -31,7 +31,7 @@ jobs:
       id: restore-cache-testu01
       uses: actions/cache/restore@v3
       with:
-        key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt') }}
+        key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt', '.github/workflows/rust.yml') }}
         path: libtestu01.a
     - name: Install Clang 17
       run: |
@@ -65,7 +65,7 @@ jobs:
     - name: Save TestU01 build cache
       uses: actions/cache/save@v3
       with:
-        key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt') }}
+        key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt', '.github/workflows/rust.yml') }}
         path: libtestu01.a
     - name: Save Rust cache
       uses: actions/cache/save@v3
