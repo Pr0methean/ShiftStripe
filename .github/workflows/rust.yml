@@ -64,6 +64,7 @@ jobs:
         command: build
         args: --verbose --lib --release --tests --benches
     - name: Save TestU01 build cache
+      if: steps.restore-cache-testu01.outputs.cache-hit != 'true'
       uses: actions/cache/save@v3
       with:
         key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt', '.github/workflows/rust.yml') }}
