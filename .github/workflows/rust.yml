@@ -28,7 +28,7 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt', '.github/workflows/rust.yml') }}
-        path: /usr/local/lib/libtestu01.a
+        path: libtestu01.a
     - name: Build TestU01
       if: steps.restore-cache-testu01.outputs.cache-hit != 'true'
       run: |
@@ -41,15 +41,15 @@ jobs:
         export CFLAGS="-flto -ffat-lto-objects -O3"
         export CC=clang-17
         dpkg-buildpackage -rfakeroot -b
-        find _build -iname *.o | xargs ar crus libtestu01.a
-        sudo mv libtestu01.a /usr/local/lib/
-        cd ..
+        find _build -iname *.o | xargs ar crus ../libtestu01.a
     - name: Save TestU01 build cache
       if: steps.restore-cache-testu01.outputs.cache-hit != 'true'
       uses: actions/cache/save@v3
       with:
         key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt', '.github/workflows/rust.yml') }}
-        path: /usr/local/lib/libtestu01.a
+        path: libtestu01.a
+    - name: Move TestU01 to /usr/local/lib
+      run: sudo mv libtestu01.a /usr/local/lib/
     - name: Install nightly Rust
       # TODO: Find a way to avoid having to copy this step to all dependent jobs
       uses: actions-rs/toolchain@v1
