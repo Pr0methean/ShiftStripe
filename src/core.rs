@@ -35,7 +35,7 @@ pub fn shift_stripe(input: Word, mut permutor: Word) -> Word {
         permutor >>= 2;
         out ^= (out ^ stripe_mask)
             .wrapping_add(META_PERMUTOR).rotate_right(1 + 2 * rotation_selector);
-        let swap_mask = STRIPE_MASKS[swap_selector];
+        let swap_mask = STRIPE_MASKS[swap_selector as usize];
         out = (out & swap_mask).shr(1.shl(swap_selector)) | (out & !swap_mask).shl(1.shl(swap_selector));
     });
     out
