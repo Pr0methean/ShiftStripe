@@ -16,15 +16,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Restore cache
-      uses: actions/cache/restore@v3
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
     - name: Generate cache key for TestU01 build
       run: apt-cache policy libtestu01-0-dev > libtestu01-cached-policy.txt
     - name: Restore TestU01 build cache
@@ -32,7 +23,7 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt', '.github/workflows/rust.yml') }}
-        path: libtestu01.a
+        path: /usr/local/lib/libtestu01.a
     - name: Install Clang 17
       run: |
         wget https://apt.llvm.org/llvm.sh
@@ -49,25 +40,35 @@ jobs:
         export CFLAGS="-flto -ffat-lto-objects -O3"
         export CC=clang-17
         dpkg-buildpackage -rfakeroot -b
-        find _build -iname *.o | xargs ar crus ../libtestu01.a
+        find _build -iname *.o | xargs ar crus libtestu01.a
+        sudo mv libtestu01.a /usr/local/lib/
         cd ..
+    - name: Save TestU01 build cache
+      if: steps.restore-cache-testu01.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v3
+      with:
+        key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt', '.github/workflows/rust.yml') }}
+        path: /usr/local/lib/libtestu01.a
     - name: Install nightly Rust
       # TODO: Find a way to avoid having to copy this step to all dependent jobs
       uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
         override: true
+    - name: Restore Rust cache
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
     - name: Build
       uses: actions-rs/cargo@v1
       with:
         command: build
         args: --verbose --lib --release --tests --benches
-    - name: Save TestU01 build cache
-      if: steps.restore-cache-testu01.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v3
-      with:
-        key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt', '.github/workflows/rust.yml') }}
-        path: libtestu01.a
     - name: Save Rust cache
       uses: actions/cache/save@v3
       with:
