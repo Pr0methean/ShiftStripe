@@ -56,9 +56,9 @@ where [(); 2 * WORDS_PER_BLOCK]:, [Word; WORDS_PER_BLOCK]: Default, [(); size_of
 
 impl <const WORDS_PER_BLOCK: usize> ShiftStripeFeistelRngCore<WORDS_PER_BLOCK>
     where [(); 2 * WORDS_PER_BLOCK]:, [Word; WORDS_PER_BLOCK]: Default {
-    // TODO: Find out why 2 or 3 blocks still require 4 rounds.
-    const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = if WORDS_PER_BLOCK <= 4 {
-        4
+    // TODO: Find out why 2 blocks still require 3 rounds.
+    const FEISTEL_ROUNDS_TO_DIFFUSE: u32 = if WORDS_PER_BLOCK <= 3 {
+        3
     } else {
         WORDS_PER_BLOCK
     } as u32;
@@ -107,8 +107,8 @@ mod tests {
             }
         }
     }
-    diffusion_small_keys_test!(02,04);
-    diffusion_small_keys_test!(03,04);
+    diffusion_small_keys_test!(02,03);
+    diffusion_small_keys_test!(03);
     diffusion_small_keys_test!(04);
     diffusion_small_keys_test!(05);
     diffusion_small_keys_test!(06);
