@@ -25,12 +25,21 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
         key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml', 'src/**/*.rs', 'benches/**/*.rs', '.github/workflows/rust.yml') }}
+    - name: Generate cache key for TestU01 build
+      run: apt-cache policy libtestu01-0-dev > libtestu01-cached-policy.txt
+    - name: Restore TestU01 build cache
+      id: restore-cache-testu01
+      uses: actions/cache/restore@v3
+      with:
+        key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt') }}
+        path: libtestu01.a
     - name: Install Clang 17
       run: |
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         sudo ./llvm.sh 17
     - name: Build TestU01
+      if: steps.restore-cache-testu01.outputs.cache-hit != 'true'
       run: |
         sudo apt-add-repository -s multiverse
         apt-get source libtestu01-0-dev
@@ -52,7 +61,12 @@ jobs:
       with:
         command: build
         args: --verbose --lib --release --tests --benches
-    - name: Save build and cache
+    - name: Save TestU01 build cache
+      uses: actions/cache/save@v3
+      with:
+        key: ${{ runner.os }}-testu01-${{ hashFiles('libtestu01-cached-policy.txt') }}
+        path: libtestu01.a
+    - name: Save Rust cache
       uses: actions/cache/save@v3
       with:
         path: |
