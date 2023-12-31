@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: -Clinker-plugin-lto -Clink-arg=-fuse-ld=lld -Cdebuginfo=1 -Cremark=all -Clink-arg=inline-threshold=2000 -Zremark-dir=/tmp/remarks -Clinker=clang-17
+  RUSTFLAGS: -Clinker-plugin-lto -Clink-arg=-fuse-ld=lld -Cdebuginfo=1 -Cremark=all -Clink-arg=-inline-threshold=2000 -Zremark-dir=/tmp/remarks -Clinker=clang-17
 jobs:
   build:
 
