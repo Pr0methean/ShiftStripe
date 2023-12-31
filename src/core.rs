@@ -1,4 +1,5 @@
 use core::ops::{Shl, Shr};
+use tailcall::tailcall;
 
 pub type Word = u64;
 
@@ -14,16 +15,32 @@ pub const STRIPE_MASKS: [Word; 6] = [
     0xffffffff00000000
 ];
 
+const ROTATION_AMOUNTS: [u32; 4] = [2,3,5,7];
+
+#[tailcall]
+#[inline]
+fn shuffle<T>(n : &mut Word, a : &mut [T]) {
+    for i in (1..a.len()).rev() {
+        let j = *n % (i + 1) as Word;
+        *n /= (i + 1);
+        a.swap(j as usize, i);
+    }
+}
+
 #[inline]
 pub fn shift_stripe(input: Word, mut permutor: Word) -> Word {
+    let mut stripe_masks = STRIPE_MASKS.clone();
+    shuffle(&mut permutor, &mut stripe_masks);
+    let mut swap_selectors: [Word; 6] = [0, 1, 2, 3, 4, 5];
+    shuffle(&mut permutor, &mut swap_selectors);
     let mut out = input;
-    for i in 0..5 {
-        out ^= (out ^ STRIPE_MASKS[(permutor % 6) as usize])
-            .wrapping_add(META_PERMUTOR).rotate_right((3 + 2*i) as u32);
-        let swap_selector = ((permutor >> 3) % 6) as usize;
+    stripe_masks.into_iter().zip(swap_selectors).for_each(|(stripe_mask, swap_selector)| {
+        let rotation_selector = (permutor & 3) as u32;
+        permutor >>= 2;
+        out ^= (out ^ stripe_mask)
+            .wrapping_add(META_PERMUTOR).rotate_right(1 + 2 * rotation_selector);
         let swap_mask = STRIPE_MASKS[swap_selector];
         out = (out & swap_mask).shr(1.shl(swap_selector)) | (out & !swap_mask).shl(1.shl(swap_selector));
-        permutor >>= 12;
-    }
+    });
     out
 }
