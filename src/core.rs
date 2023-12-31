@@ -14,8 +14,6 @@ pub const STRIPE_MASKS: [Word; 6] = [
     0xffffffff00000000
 ];
 
-const ROTATION_AMOUNTS: [u32; 4] = [2,3,5,7];
-
 #[inline]
 fn shuffle<T>(n : &mut Word, a : &mut [T]) {
     for i in (1..a.len()).rev() {
