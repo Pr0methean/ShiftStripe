@@ -9,12 +9,13 @@ fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
         left: &mut [Word; WORDS_PER_BLOCK], right: &mut [Word; WORDS_PER_BLOCK],
         permutor: &mut [Word; WORDS_PER_BLOCK], rounds: u32)  {
     let mut new_left = [0; WORDS_PER_BLOCK];
-    for _ in 0..rounds {
+    for round in 0..rounds {
         new_left[1..WORDS_PER_BLOCK].copy_from_slice(&right[0..(WORDS_PER_BLOCK - 1)]);
         new_left[0] = right[WORDS_PER_BLOCK - 1];
         for unit_index in 0..WORDS_PER_BLOCK {
             let f = shift_stripe(right[unit_index], permutor[unit_index]);
             right[unit_index] = left[unit_index] ^ f;
+            permutor[unit_index] = permutor[unit_index].wrapping_add(META_PERMUTOR).rotate_right(13 + 2 * round);
         }
         left.copy_from_slice(&new_left);
     }
