@@ -50,9 +50,7 @@ where [(); 2 * WORDS_PER_BLOCK]:, [Word; WORDS_PER_BLOCK]: Default, [(); size_of
         }
         state_blocks = self.state.array_chunks_mut();
         let first: &mut [Word; WORDS_PER_BLOCK] = state_blocks.next().unwrap();
-        temp_block.iter().zip(first.iter_mut()).enumerate().for_each(|(index, (first, second))|
-            results[index] = shift_stripe(*first, second)
-        );
+        *results = xor_blocks(&temp_block, first);
     }
 }
 
