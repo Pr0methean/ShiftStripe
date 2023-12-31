@@ -42,8 +42,7 @@ jobs:
       if: steps.restore-cache-testu01.outputs.cache-hit != 'true'
       run: |
         sudo apt-add-repository -s multiverse
-        apt-get source libtestu01-0-dev
-        rm -rf testu01-*
+        apt-get source libtestu01-0-dev --dsc-only
         sudo apt-get build-dep libtestu01-0-dev
         dpkg-source -x testu01*.dsc
         cd testu01-*
