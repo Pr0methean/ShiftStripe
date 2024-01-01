@@ -16,7 +16,7 @@ fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
             .for_each(|((left, right), permutor)| {
                 let f = shift_stripe(*right, *permutor);
                 *right = left ^ f;
-                *permutor = permutor.rotate_right(19);
+                *permutor = permutor.rotate_right(25);
         });
         left.copy_from_slice(&new_left);
     }
