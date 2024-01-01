@@ -3,7 +3,7 @@ use log::info;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
 use crate::block::{random_block, xor_blocks};
-use crate::core::{META_PERMUTOR, shift_stripe, Word};
+use crate::core::{shift_stripe, Word};
 
 fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
         left: &mut [Word; WORDS_PER_BLOCK], right: &mut [Word; WORDS_PER_BLOCK],
