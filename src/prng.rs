@@ -108,8 +108,8 @@ mod tests {
             }
         }
     }
-    diffusion_small_keys_test!(02,03);
-    diffusion_small_keys_test!(03);
+    diffusion_small_keys_test!(02,04);
+    diffusion_small_keys_test!(03,04);
     diffusion_small_keys_test!(04);
     diffusion_small_keys_test!(05);
     diffusion_small_keys_test!(06);
