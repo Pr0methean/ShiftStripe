@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Generate cache key for TestU01 build
-      run: apt-cache policy libtestu01-0-dev > libtestu01-cached-policy.txt
+      run: apt-cache depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances libtestu01-0-dev | grep "^\w" | sort -u > libtestu01-cached-policy.txt
     - name: Install Clang 17
       run: |
         wget https://apt.llvm.org/llvm.sh
