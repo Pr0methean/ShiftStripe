@@ -157,7 +157,7 @@ jobs:
           args: --offline --verbose
           toolchain: nightly
   bigcrush-basic:
-    needs: build
+    needs: ['run-unit-tests', 'run-benchmarks']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -188,7 +188,7 @@ jobs:
           args: --offline --verbose --lib prng::tests::test_big_crush_basic --release
           toolchain: nightly
   bigcrush-reversed-bits:
-    needs: build
+    needs: ['run-unit-tests', 'run-benchmarks']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -219,7 +219,7 @@ jobs:
           args: --offline --verbose --lib prng::tests::test_big_crush_reversed_bits --release
           toolchain: nightly
   bigcrush-upper-half:
-    needs: build
+    needs: ['run-unit-tests', 'run-benchmarks']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -250,7 +250,7 @@ jobs:
           args: --offline --verbose --lib prng::tests::test_big_crush_upper_half --release
           toolchain: nightly
   bigcrush-lower-half:
-    needs: build
+    needs: ['run-unit-tests', 'run-benchmarks']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -281,7 +281,7 @@ jobs:
           args: --offline --verbose --lib prng::tests::test_big_crush_lower_half --release
           toolchain: nightly
   bigcrush-upper-half-reversed-bits:
-    needs: build
+    needs: ['run-unit-tests', 'run-benchmarks']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -312,7 +312,7 @@ jobs:
           args: --offline --verbose --lib prng::tests::test_big_crush_upper_half_reversed_bits --release
           toolchain: nightly
   bigcrush-lower-half-reversed-bits:
-    needs: build
+    needs: ['run-unit-tests', 'run-benchmarks']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
