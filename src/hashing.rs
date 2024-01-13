@@ -1,4 +1,5 @@
 use core::hash::Hasher;
+use std::simd::num::SimdUint;
 use rand::{Rng};
 use crate::block::{compress_block_to_unit, random_block};
 use crate::core::{META_PERMUTOR, rotate_permutor, shift_stripe, shuffle_lanes, Vector, VECTOR_SIZE, Word};
@@ -27,7 +28,7 @@ impl Hasher for ShiftStripeSponge {
     #[inline]
     fn finish(&self) -> u64 {
         let mut out = self.first_state.clone();
-        shift_stripe(&mut out, self.second_state);
+        shift_stripe(&mut out, self.second_state.reverse_bits());
         compress_block_to_unit(&out)
     }
 
