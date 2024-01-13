@@ -26,7 +26,9 @@ impl ShiftStripeSponge {
 impl Hasher for ShiftStripeSponge {
     #[inline]
     fn finish(&self) -> u64 {
-        compress_block_to_unit(&self.first_state) ^ compress_block_to_unit(&self.second_state)
+        let mut out = self.first_state.clone();
+        shift_stripe(&mut out, self.second_state);
+        compress_block_to_unit(&out)
     }
 
     #[inline]
