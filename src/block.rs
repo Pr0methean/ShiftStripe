@@ -46,7 +46,7 @@ pub fn compress_block_to_unit(block: &Vector) -> Word {
 
 #[inline]
 pub fn bytes_to_vector<T: Iterator<Item=u8>>(bytes: T) -> Vector {
-    bytes.into_iter().array_chunks().map(Word::from_be_bytes).collect()
+    bytes.into_iter().array_chunks().map(Word::from_be_bytes).collect::<Vec<_>>().try_into().unwrap()
 }
 
 #[inline]
