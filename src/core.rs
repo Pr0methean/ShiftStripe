@@ -45,7 +45,7 @@ fn shuffled_mask_indices(n : &mut Vector) -> [VectorUsize; STRIPE_MASKS.len()] {
 }
 
 #[inline]
-fn load_mask_vectors<T>(indices: [VectorUsize; STRIPE_MASKS.len()], a : &mut [Vector; STRIPE_MASKS.len()]) {
+fn load_mask_vectors(indices: [VectorUsize; STRIPE_MASKS.len()], a : &mut [Vector; STRIPE_MASKS.len()]) {
     a.iter_mut().zip(indices.into_iter()).for_each(|(a, indices)| {
         *a = Vector::gather_or_default(STRIPE_MASKS.as_slice(), indices);
     });

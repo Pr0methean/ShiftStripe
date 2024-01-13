@@ -47,7 +47,7 @@ pub fn compress_block_to_unit(block: &Vector) -> Word {
 #[inline]
 pub fn bytes_to_vector<T: Iterator<Item=u8>>(bytes: T) -> Vector {
     let mut out = Vector::splat(0);
-    out.iter_mut().zip(bytes.into_iter().array_chunks().map(Word::from_be_bytes)).for_each(|(out, word)| *out = word);
+    out.as_mut_array().iter_mut().zip(bytes.into_iter().array_chunks().map(Word::from_be_bytes)).for_each(|(out, word)| *out = word);
     out
 }
 
