@@ -1,4 +1,3 @@
-use std::mem::swap;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
 use crate::block::random_block;
@@ -41,7 +40,6 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
         self.second_state ^= shuffle_lanes(rotate_permutor(self.first_state));
         shift_stripe(&mut output, second_state_copy);
         *results = output.into();
-        swap(&mut self.first_state, &mut self.second_state);
     }
 }
 
