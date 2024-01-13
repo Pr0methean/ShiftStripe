@@ -111,6 +111,7 @@ mod tests {
         }
     }
 
+    #[test]
     fn test_hashing_zero_key() {
         test_hashing(DefaultArray::default().0,
                              once([].into())
@@ -119,6 +120,7 @@ mod tests {
         );
     }
 
+    #[test]
     fn test_hashing_random_inputs() {
         const LEN_PER_INPUT: usize = size_of::<[Word; 2]>();
         const INPUT_COUNT: usize = 1 << 16;
@@ -130,6 +132,7 @@ mod tests {
         test_hashing(DefaultArray::default().0, inputs.into_iter());
     }
 
+    #[test]
     fn test_hashing_random_inputs_and_random_key() {
         const LEN_PER_INPUT: usize = size_of::<[Word; 2]>();
         const INPUT_COUNT: usize = 1 << 16;
@@ -141,9 +144,8 @@ mod tests {
         test_hashing(random_block(&mut thread_rng()), inputs.into_iter());
     }
 
-    fn test_hashing_random_key<const WORDS_PER_BLOCK: usize>()
-        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: ,
-        [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+    #[test]
+    fn test_hashing_random_key() {
         let key = random_block(&mut thread_rng());
         log::info!("Using key {:02x?}", key);
         test_hashing(key,
@@ -151,41 +153,4 @@ mod tests {
                          .chain((0..=u8::MAX).map(|x| [x].into()))
                          .chain((0..=u8::MAX).flat_map(|x| (0..=u8::MAX).map(move |y| [x, y].into()))))
     }
-
-    macro_rules! parameterize_hashing_test {
-        ($func: ident, $num_blocks: expr) => {
-            paste::item!{
-                #[test]
-                fn [< test_hashing_ $num_blocks _blocks_ $func >] () {
-                    $func::< $num_blocks >();
-                }
-            }
-        }
-    }
-
-    macro_rules! hashing_test_suite {
-        ($num_blocks: expr) => {
-            parameterize_hashing_test!(test_hashing_zero_key, $num_blocks);
-            parameterize_hashing_test!(test_hashing_random_inputs, $num_blocks);
-            parameterize_hashing_test!(test_hashing_random_key, $num_blocks);
-            parameterize_hashing_test!(test_hashing_random_inputs_and_random_key, $num_blocks);
-        };
-    }
-
-    hashing_test_suite!(02);
-    hashing_test_suite!(03);
-    hashing_test_suite!(04);
-    hashing_test_suite!(05);
-    hashing_test_suite!(06);
-    hashing_test_suite!(07);
-    hashing_test_suite!(08);
-    hashing_test_suite!(09);
-    hashing_test_suite!(10);
-    hashing_test_suite!(11);
-    hashing_test_suite!(12);
-    hashing_test_suite!(13);
-    hashing_test_suite!(14);
-    hashing_test_suite!(15);
-    hashing_test_suite!(16);
-    hashing_test_suite!(17);
 }
