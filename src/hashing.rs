@@ -38,6 +38,7 @@ impl Hasher for ShiftStripeSponge {
             shuffle_lanes(self.second_state);
             self.second_state ^= temp_state;
         }
+        self.first_state[VECTOR_SIZE - 1] = self.first_state[VECTOR_SIZE - 1].wrapping_add(1);
     }
 }
 
