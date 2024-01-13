@@ -1,7 +1,7 @@
 use core::hash::Hasher;
 use rand::{Rng};
 use crate::block::{compress_block_to_unit, random_block};
-use crate::core::{META_PERMUTOR, shift_stripe, shuffle_lanes, Vector, VECTOR_SIZE, Word};
+use crate::core::{META_PERMUTOR, rotate_permutor, shift_stripe, shuffle_lanes, Vector, VECTOR_SIZE, Word};
 
 #[derive(Clone, Debug)]
 pub struct ShiftStripeSponge {
@@ -38,7 +38,7 @@ impl Hasher for ShiftStripeSponge {
             self.first_state[VECTOR_SIZE - 1] ^= META_PERMUTOR.wrapping_mul(byte.into());
             shift_stripe(&mut self.first_state, self.second_state);
             shuffle_lanes(self.first_state);
-            self.second_state ^= temp_state;
+            self.second_state ^= rotate_permutor(temp_state);
         }
         self.first_state[VECTOR_SIZE - 1] = self.first_state[VECTOR_SIZE - 1].wrapping_add(1);
     }

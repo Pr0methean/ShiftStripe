@@ -37,7 +37,7 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
             RNG_ROUNDS);
         *results = (self.first_state ^ self.second_state).into();
         swap(&mut self.first_state, &mut self.second_state);
-        self.second_state ^= temp_block;
+        self.second_state ^= shuffle_lanes(rotate_permutor(temp_block));
     }
 }
 
