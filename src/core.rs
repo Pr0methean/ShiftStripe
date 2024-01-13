@@ -39,7 +39,7 @@ fn shuffled_mask_indices(n : &mut Vector) -> [VectorUsize; STRIPE_MASKS.len()] {
         *n /= &modulus;
         let (left_mut, right_mut) = indices.split_at_mut(i + 1);
         for lane in 0..VECTOR_SIZE {
-            swap(&mut left_mut[i][lane], right_mut[j[lane]][lane]);
+            swap(&mut left_mut[i][lane], &mut right_mut[j[lane] as usize][lane]);
         }
     }
     array![i => VectorUsize::from_array(indices[i]); STRIPE_MASKS.len()]
