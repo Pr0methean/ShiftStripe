@@ -1,43 +1,38 @@
 use core::hash::Hasher;
-use core::mem::size_of;
 use rand::{Rng};
 use crate::block::{compress_block_to_unit, random_block};
-use crate::core::{META_PERMUTOR, shift_stripe, Word};
+use crate::core::{META_PERMUTOR, shift_stripe, Vector, VECTOR_SIZE, Word};
 
 #[derive(Clone, Debug)]
-pub struct ShiftStripeSponge<const WORDS_PER_BLOCK: usize> {
-    state: [Word; WORDS_PER_BLOCK]
+pub struct ShiftStripeSponge {
+    state: [Vector; 2]
 }
 
-impl <const WORDS_PER_BLOCK: usize> ShiftStripeSponge<WORDS_PER_BLOCK> {
-    pub fn new(key: [Word; WORDS_PER_BLOCK]) -> ShiftStripeSponge<WORDS_PER_BLOCK> {
+impl ShiftStripeSponge {
+    pub fn new(key: [Word; 2 * VECTOR_SIZE]) -> ShiftStripeSponge {
         ShiftStripeSponge {
-            state: key
+            state: key.array_chunks().map(Vector::from_array).collect()
         }
     }
-}
-
-impl <const WORDS_PER_BLOCK: usize> ShiftStripeSponge<WORDS_PER_BLOCK> {
-    pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge<WORDS_PER_BLOCK> {
+    pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge {
         Self::new(random_block(rng))
     }
 }
 
-impl <const WORDS_PER_BLOCK: usize> Hasher for ShiftStripeSponge<WORDS_PER_BLOCK>
-    where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+impl Hasher for ShiftStripeSponge {
     #[inline]
     fn finish(&self) -> u64 {
-        compress_block_to_unit(&self.state)
+        compress_block_to_unit(&self.state[0]) ^ compress_block_to_unit(&self.state[1])
     }
 
     #[inline]
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes.iter().copied() {
-            self.state[3 % WORDS_PER_BLOCK] ^= META_PERMUTOR.wrapping_mul(byte.into());
             self.state[0] ^= shift_stripe(
                 self.state[1],
-                self.state[2 % WORDS_PER_BLOCK]
+                self.state[0]
             );
+            self.state[1][VECTOR_SIZE - 1] ^= META_PERMUTOR.wrapping_mul(byte.into());
             self.state.rotate_left(1);
         }
     }
@@ -52,13 +47,10 @@ mod tests {
     use rand::{Rng, thread_rng};
     use crate::block::random_block;
     use crate::block::DefaultArray;
-    use crate::core::Word;
+    use crate::core::{VECTOR_SIZE, Word};
     use crate::hashing::ShiftStripeSponge;
 
-    fn test_hashing<T: Iterator<Item=Box<[u8]>>, const WORDS_PER_BLOCK: usize>(key: [Word; WORDS_PER_BLOCK], inputs: T)
-    where ShiftStripeSponge<WORDS_PER_BLOCK> : Hasher,
-        [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]: ,
-        [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+    fn test_hashing<T: Iterator<Item=Box<[u8]>>>(key: [Word; 2 * VECTOR_SIZE], inputs: T) {
         // Check distribution modulo more primes than we use as rotation amounts
         const TEST_PRIMES: [u128; 14] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 43, 47];
 
@@ -119,19 +111,15 @@ mod tests {
         }
     }
 
-    fn test_hashing_zero_key<const WORDS_PER_BLOCK: usize>()
-        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: ,
-            [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]: {
-        test_hashing::<_, WORDS_PER_BLOCK>(DefaultArray::default().0,
+    fn test_hashing_zero_key() {
+        test_hashing(DefaultArray::default().0,
                              once([].into())
                          .chain((0..=u8::MAX).map(|x| [x].into()))
                          .chain((0..=u8::MAX).flat_map(|x| (0..=u8::MAX).map(move |y| [x, y].into())))
         );
     }
 
-    fn test_hashing_random_inputs<const WORDS_PER_BLOCK: usize>()
-        where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]:,
-        [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]:{
+    fn test_hashing_random_inputs() {
         const LEN_PER_INPUT: usize = size_of::<[Word; 2]>();
         const INPUT_COUNT: usize = 1 << 16;
         let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
@@ -139,13 +127,10 @@ mod tests {
         let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
         inputs.sort();
         inputs.dedup();
-        test_hashing::<_, WORDS_PER_BLOCK>(DefaultArray::default().0,
-                             inputs.into_iter());
+        test_hashing(DefaultArray::default().0, inputs.into_iter());
     }
 
-    fn test_hashing_random_inputs_and_random_key<const WORDS_PER_BLOCK: usize>()
-            where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: ,
-            [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]: {
+    fn test_hashing_random_inputs_and_random_key() {
         const LEN_PER_INPUT: usize = size_of::<[Word; 2]>();
         const INPUT_COUNT: usize = 1 << 16;
         let mut inputs = vec![0u8; LEN_PER_INPUT * INPUT_COUNT];
@@ -153,8 +138,7 @@ mod tests {
         let mut inputs: Vec<Box<[u8]>> = inputs.chunks(LEN_PER_INPUT).map(|x| x.to_owned().into_boxed_slice()).collect();
         inputs.sort();
         inputs.dedup();
-        test_hashing::<_, WORDS_PER_BLOCK>(random_block(&mut thread_rng()),
-                     inputs.into_iter());
+        test_hashing(random_block(&mut thread_rng()), inputs.into_iter());
     }
 
     fn test_hashing_random_key<const WORDS_PER_BLOCK: usize>()
@@ -162,7 +146,7 @@ mod tests {
         [(); (u8::MAX as usize + 1) * size_of::<[Word; WORDS_PER_BLOCK]>()]: {
         let key = random_block(&mut thread_rng());
         log::info!("Using key {:02x?}", key);
-        test_hashing::<_, WORDS_PER_BLOCK>(key,
+        test_hashing(key,
                      once([].into())
                          .chain((0..=u8::MAX).map(|x| [x].into()))
                          .chain((0..=u8::MAX).flat_map(|x| (0..=u8::MAX).map(move |y| [x, y].into()))))

@@ -6,6 +6,7 @@
 #![feature(iter_collect_into)]
 #![feature(slice_as_chunks)]
 #![feature(optimize_attribute)]
+#![feature(portable_simd)]
 
 pub mod block;
 pub mod core;

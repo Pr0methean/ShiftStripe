@@ -1,9 +1,10 @@
 use std::iter::repeat;
 use core::mem::size_of;
+use std::ops::BitXor;
 use rand::{Fill, Rng};
 use rand::distributions::{Distribution, Standard};
 use rand_core::Error;
-use crate::core::{shift_stripe, Word};
+use crate::core::{Vector, Word};
 
 
 #[repr(transparent)]
@@ -39,12 +40,12 @@ impl <T, const N: usize> Fill for DefaultArray<T, N> where T: Default, Standard:
 }
 
 #[inline]
-pub fn compress_block_to_unit<const WORDS_PER_BLOCK: usize>(block: &[Word; WORDS_PER_BLOCK]) -> Word {
-    block.iter().copied().fold(0, |x, y| shift_stripe(x, y))
+pub fn compress_block_to_unit(block: &Vector) -> Word {
+    block.as_array().iter().copied().fold(0, Word::bitxor)
 }
 
 #[inline]
-pub fn bytes_to_block<T: Iterator<Item=u8>, const WORDS_PER_BLOCK: usize>(bytes: T) -> [Word; WORDS_PER_BLOCK] {
+pub fn bytes_to_vector<T: Iterator<Item=u8>>(bytes: T) -> Vector {
     bytes.into_iter().array_chunks().map(Word::from_be_bytes).collect::<Vec<_>>().try_into().unwrap()
 }
 
@@ -62,21 +63,15 @@ pub fn random_block<T: Rng, const WORDS_PER_BLOCK: usize>(rand: &mut T) -> [Word
 }
 
 #[inline]
-pub fn int_to_block<const WORDS_PER_BLOCK: usize>(input: i128) -> [Word; WORDS_PER_BLOCK]
-    where [(); size_of::<[Word; WORDS_PER_BLOCK]>()]: {
-    if WORDS_PER_BLOCK == 1 {
-        let mut out = [0; WORDS_PER_BLOCK];
-        out[0] = input as Word;
-        return out;
-    }
-    let mut bytes = [0u8; size_of::<[Word; WORDS_PER_BLOCK]>()];
-    let first_byte = size_of::<[Word; WORDS_PER_BLOCK]>() - size_of::<i128>();
+pub fn int_to_vector(input: i128) -> Vector {
+    let mut bytes = [0u8; size_of::<Vector>()];
+    let first_byte = size_of::<Vector>() - size_of::<i128>();
     bytes[first_byte..].copy_from_slice(input.to_be_bytes().as_slice());
     if input < 0 {
         let sign_extend = repeat(u8::MAX).take(first_byte).collect::<Vec<_>>();
         bytes[..first_byte].copy_from_slice(&sign_extend);
     }
-    bytes_to_block(bytes.into_iter())
+    bytes_to_vector(bytes.into_iter())
 }
 
 #[inline]
