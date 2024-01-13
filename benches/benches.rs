@@ -26,12 +26,11 @@ mod bench {
     #[bench]
     fn benchmark_hash(b: &mut Bencher) {
         use rand::Rng;
-        use core::hash::Hasher;
 
         let mut input = [0u64; 1024];
         thread_rng().fill(&mut input);
         let mut input = input.into_iter().map(test::black_box).cycle();
-        let mut hasher = ShiftStripeSponge::new_random(&mut thread_rng());
+        let mut hasher = ShiftStripeSponge::from_rng(&mut thread_rng());
         b.iter(|| hasher.write(&input.next().unwrap().to_be_bytes()));
         std::hint::black_box(hasher.finish());
     }
