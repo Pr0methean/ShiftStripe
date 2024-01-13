@@ -33,7 +33,7 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
         shift_stripe_feistel(
             &mut self.first_state,
             &mut self.second_state,
-            &mut temp_block,
+            &mut temp_block.clone(),
             RNG_ROUNDS);
         *results = (self.first_state ^ self.second_state).into();
         swap(&mut self.first_state, &mut self.second_state);
