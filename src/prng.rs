@@ -1,7 +1,6 @@
-use std::ops::Shr;
-use log::info;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
+use crate::block::random_block;
 use crate::core::{shift_stripe, shuffle_lanes, Vector, VECTOR_SIZE, Word};
 
 pub const RNG_ROUNDS: u32 = 3;
@@ -29,14 +28,14 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
 
     #[inline(always)]
     fn generate(&mut self, results: &mut Self::Results) {
-        let mut temp_block = *self.state[0] ^ *self.state[1];
+        let mut temp_block = self.state[0] ^ self.state[1];
         shift_stripe_feistel(
             &mut self.state[0],
             &mut self.state[1],
             &mut temp_block,
             RNG_ROUNDS);
         self.state.swap(0, 1);
-        *results = *self.state[0] ^ *self.state[1];
+        *results = self.state[0] ^ self.state[1];
         self.state[1] ^= temp_block;
     }
 }
@@ -44,15 +43,12 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
 impl ShiftStripeFeistelRngCore {
     pub fn new(seed: [Word; 2 * VECTOR_SIZE]) -> ShiftStripeFeistelRngCore {
         ShiftStripeFeistelRngCore {
-            state: seed.array_chunks().copied().map(Vector::from_array).collect().try_into().unwrap()
+            state: seed.array_chunks().copied().map(Vector::from_array).collect::<Vec<_>>().try_into().unwrap()
         }
     }
 
     pub fn from_rng<T: Rng>(rng: &mut T) -> ShiftStripeFeistelRngCore {
-        let mut seed = [0; 2 * VECTOR_SIZE];
-        rng.fill(&mut seed);
-        info!("PRNG seed: {:016x?}", seed);
-        Self::new(seed)
+        Self::new(random_block(rng))
     }
 }
 

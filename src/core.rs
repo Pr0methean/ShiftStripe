@@ -37,7 +37,7 @@ fn shuffled_mask_indices(n : &mut Vector) -> [VectorUsize; STRIPE_MASKS.len()] {
         let j = *n % modulus;
         *n /= &modulus;
         for lane in 0..VECTOR_SIZE {
-            swap(&mut indices[i[lane]][lane], &mut indices[j[lane]][lane]);
+            swap(&mut indices[i][lane], &mut indices[j[lane] as usize][lane]);
         }
     }
     array![i => VectorUsize::from_array(indices[i]); STRIPE_MASKS.len()]
@@ -57,7 +57,8 @@ pub fn shift_stripe(input: Vector, mut permutor: Vector) -> Vector {
     let swap_selectors = shuffled_mask_indices(&mut permutor);
     let mut swap_masks = [Vector::splat(0); STRIPE_MASKS.len()];
     load_mask_vectors(swap_selectors, &mut swap_masks);
-    let swap_rotation_amounts = Vector::splat(1).shl(Vector::from(swap_selectors));
+    let swap_rotation_amounts: [Vector; STRIPE_MASKS.len()]
+        = swap_masks.map(|selector| Vector::splat(1).shl(selector)).iter().collect::<Vec<_>>().try_into().unwrap();
     let mut out = input;
     stripe_masks.into_iter().zip(swap_masks).zip(swap_rotation_amounts).for_each(
         |((stripe_mask, swap_mask), swap_rotation_amount)| {

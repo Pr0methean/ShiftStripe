@@ -51,7 +51,7 @@ pub fn bytes_to_vector<T: Iterator<Item=u8>>(bytes: T) -> Vector {
 
 #[inline]
 pub fn block_to_bytes(block: Vector) -> [u8; size_of::<Vector>()] {
-    let byte_vec: Vec<_> = block.iter().copied().flat_map(Word::to_be_bytes).collect();
+    let byte_vec: Vec<_> = block.as_array().iter().copied().flat_map(Word::to_be_bytes).collect();
     byte_vec.try_into().unwrap()
 }
 

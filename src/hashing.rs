@@ -11,7 +11,7 @@ pub struct ShiftStripeSponge {
 impl ShiftStripeSponge {
     pub fn new(key: [Word; 2 * VECTOR_SIZE]) -> ShiftStripeSponge {
         ShiftStripeSponge {
-            state: key.array_chunks().map(Vector::from_array).collect()
+            state: key.array_chunks().copied().map(Vector::from_array).collect::<Vec<_>>().try_into().unwrap()
         }
     }
     pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge {
