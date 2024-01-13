@@ -29,12 +29,12 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
 
     #[inline(always)]
     fn generate(&mut self, results: &mut Self::Results) {
+        let mut output = self.first_state.clone();
         shift_stripe_feistel(
             &mut self.first_state,
             &mut self.second_state,
             &mut self.second_state,
             RNG_ROUNDS);
-        let mut output = self.first_state.clone();
         shift_stripe(&mut output, self.second_state);
         *results = *self.first_state ^ output;
         self.second_state ^= shuffle_lanes(rotate_permutor(self.first_state));
