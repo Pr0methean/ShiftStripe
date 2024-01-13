@@ -44,7 +44,7 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
 impl ShiftStripeFeistelRngCore {
     pub fn new(seed: [Word; 2 * VECTOR_SIZE]) -> ShiftStripeFeistelRngCore {
         ShiftStripeFeistelRngCore {
-            state: seed.array_chunks().map(Vector::from_array).collect()
+            state: seed.array_chunks().copied().map(Vector::from_array).collect().try_into().unwrap()
         }
     }
 
