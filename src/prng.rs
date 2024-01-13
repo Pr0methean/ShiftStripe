@@ -19,7 +19,8 @@ fn shift_stripe_feistel(left: &mut Vector, right: &mut Vector, permutor: &mut Ve
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct ShiftStripeFeistelRngCore {
-    state: [Vector; 2]
+    first_state: Vector,
+    second_state: Vector
 }
 
 impl BlockRngCore for ShiftStripeFeistelRngCore {
@@ -28,23 +29,24 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
 
     #[inline(always)]
     fn generate(&mut self, results: &mut Self::Results) {
-        let mut temp_block = self.state[0] ^ self.state[1];
-        let ([first], [second]) = self.state.split_at_mut(1);
+        let mut temp_block = self.first_state ^ self.second_state;
         shift_stripe_feistel(
-            first,
-            second,
+            &mut self.first_state,
+            &mut self.second_state,
             &mut temp_block,
             RNG_ROUNDS);
-        *results = (*first ^ *second).into();
-        swap(first, second);
-        *second ^= temp_block;
+        *results = (self.first_state ^ self.second_state).into();
+        swap(&mut self.first_state, &mut self.second_state);
+        self.second_state ^= temp_block;
     }
 }
 
 impl ShiftStripeFeistelRngCore {
     pub fn new(seed: [Word; 2 * VECTOR_SIZE]) -> ShiftStripeFeistelRngCore {
+        let mut chunks = seed.array_chunks::<VECTOR_SIZE>().copied();
         ShiftStripeFeistelRngCore {
-            state: seed.array_chunks().copied().map(Vector::from_array).collect::<Vec<_>>().try_into().unwrap()
+            first_state: Vector::from_array(chunks.next().unwrap()),
+            second_state: Vector::from_array(chunks.next().unwrap()),
         }
     }
 
