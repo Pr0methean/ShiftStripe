@@ -36,7 +36,7 @@ impl Hasher for ShiftStripeSponge {
             self.first_state[VECTOR_SIZE - 1] ^= META_PERMUTOR.wrapping_mul(byte.into());
             shift_stripe(&mut self.first_state, self.second_state);
             shuffle_lanes(self.first_state);
-            self.second_state ^= temp_state ^ self.first_state;
+            self.second_state ^= temp_state;
         }
         self.first_state[VECTOR_SIZE - 1] = self.first_state[VECTOR_SIZE - 1].wrapping_add(1);
     }
