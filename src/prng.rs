@@ -1,3 +1,4 @@
+use std::mem::swap;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
 use crate::block::random_block;
@@ -28,14 +29,15 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
     #[inline(always)]
     fn generate(&mut self, results: &mut Self::Results) {
         let mut temp_block = self.state[0] ^ self.state[1];
+        let ([first], [second]) = self.state.split_at_mut(1);
         shift_stripe_feistel(
-            &mut self.state[0],
-            &mut self.state[1],
+            first,
+            second,
             &mut temp_block,
             RNG_ROUNDS);
-        *results = (self.state[0] ^ self.state[1]).into();
-        self.state.swap(0, 1);
-        self.state[1] ^= temp_block;
+        *results = (*first ^ *second).into();
+        swap(first, second);
+        *second ^= temp_block;
     }
 }
 
