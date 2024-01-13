@@ -5,8 +5,7 @@ use crate::core::{shift_stripe, shuffle_lanes, Vector, VECTOR_SIZE, Word};
 
 pub const RNG_ROUNDS: u32 = 3;
 
-fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
-        left: &mut Vector, right: &mut Vector, permutor: &mut Vector, rounds: u32)  {
+fn shift_stripe_feistel(left: &mut Vector, right: &mut Vector, permutor: &mut Vector, rounds: u32)  {
     let new_left = shuffle_lanes(*right);
     for _ in 0..rounds {
         let f = shift_stripe(right.clone(), permutor.clone());
@@ -59,6 +58,7 @@ mod tests {
     use core::mem::size_of;
     use std::fmt::Debug;
     use rand_core::{Error, RngCore};
+    use rand_core::impls::fill_bytes_via_next;
     use rusty_fork::rusty_fork_test;
     use testu01::decorators::ReverseBits;
     use crate::prng::ShiftStripeFeistelRngCore;
@@ -166,8 +166,7 @@ mod tests {
         }
 
         fn fill_bytes(&mut self, dest: &mut [u8]) {
-            dest.chunks_mut(size_of::<u32>()).for_each(|chunk|
-                chunk.copy_from_slice(&self.next_u32().to_le_bytes()[0..chunk.len()]));
+            fill_bytes_via_next(self, dest);
         }
 
         fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
