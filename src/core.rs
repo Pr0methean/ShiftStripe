@@ -2,6 +2,7 @@ use core::ops::{Shl};
 use std::mem::swap;
 use std::ops::Shr;
 use std::simd::{Simd, simd_swizzle};
+use std::simd::num::SimdUint;
 use array_macro::array;
 
 pub type Word = u64;
@@ -59,7 +60,7 @@ pub fn shift_stripe(input: Vector, mut permutor: Vector) -> Vector {
     load_mask_vectors(swap_selectors, &mut swap_masks);
     let mut swap_rotation_amounts: [Vector; STRIPE_MASKS.len()] = [Vector::splat(1); STRIPE_MASKS.len()];
     swap_rotation_amounts.iter_mut().zip(swap_selectors).for_each(|(rotation_amounts, selector)|
-        *rotation_amounts <<= Vector::from(selector));
+        *rotation_amounts <<= selector.cast());
     let mut out = input;
     stripe_masks.into_iter().zip(swap_masks).zip(swap_rotation_amounts).for_each(
         |((stripe_mask, swap_mask), swap_rotation_amount)| {
