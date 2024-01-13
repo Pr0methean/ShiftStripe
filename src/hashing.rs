@@ -1,7 +1,7 @@
 use core::hash::Hasher;
 use rand::{Rng};
 use crate::block::{compress_block_to_unit, random_block};
-use crate::core::{META_PERMUTOR, shift_stripe, Vector, VECTOR_SIZE, Word};
+use crate::core::{META_PERMUTOR, shift_stripe, shuffle_lanes, Vector, VECTOR_SIZE, Word};
 
 #[derive(Clone, Debug)]
 pub struct ShiftStripeSponge {
@@ -28,10 +28,10 @@ impl Hasher for ShiftStripeSponge {
     #[inline]
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes.iter().copied() {
-            self.state[0] ^= shift_stripe(
+            self.state[0] ^= shuffle_lanes(shift_stripe(
                 self.state[1],
                 self.state[0]
-            );
+            ));
             self.state[1][VECTOR_SIZE - 1] ^= META_PERMUTOR.wrapping_mul(byte.into());
             self.state.rotate_left(1);
         }

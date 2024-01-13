@@ -25,7 +25,7 @@ pub const STRIPE_MASKS: [Word; 7] = [
 ];
 
 #[inline]
-fn shuffle_lanes(n: Vector) -> Vector {
+pub(crate) fn shuffle_lanes(n: Vector) -> Vector {
     simd_swizzle!(n, [1, 3, 0, 2])
 }
 

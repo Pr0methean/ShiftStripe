@@ -2,13 +2,13 @@ use std::ops::Shr;
 use log::info;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
-use crate::core::{shift_stripe, Vector, VECTOR_SIZE, Word};
+use crate::core::{shift_stripe, shuffle_lanes, Vector, VECTOR_SIZE, Word};
 
 pub const RNG_ROUNDS: u32 = 3;
 
 fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
         left: &mut Vector, right: &mut Vector, permutor: &mut Vector, rounds: u32)  {
-    let mut new_left = right;
+    let mut new_left = shuffle_lanes(*right);
     for _ in 0..rounds {
         let f = shift_stripe(right.clone(), permutor.clone());
         *right = *left ^ f;
