@@ -26,6 +26,7 @@ mod bench {
     #[bench]
     fn benchmark_hash(b: &mut Bencher) {
         use rand::Rng;
+        use core::hash::Hasher;
 
         let mut input = [0u64; 1024];
         thread_rng().fill(&mut input);
