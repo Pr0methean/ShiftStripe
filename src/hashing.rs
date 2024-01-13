@@ -34,7 +34,8 @@ impl Hasher for ShiftStripeSponge {
     #[inline]
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes.iter().copied() {
-            let temp_state = self.first_state.clone();
+            let mut temp_state = self.second_state.clone();
+            temp_state ^= self.second_state;
             self.first_state[VECTOR_SIZE - 1] ^= META_PERMUTOR.wrapping_mul(byte.into());
             shift_stripe(&mut self.first_state, self.second_state);
             shuffle_lanes(self.first_state);
