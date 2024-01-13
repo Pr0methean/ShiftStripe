@@ -9,8 +9,8 @@ pub const RNG_ROUNDS: u32 = 3;
 fn shift_stripe_feistel(left: &mut Vector, right: &mut Vector, permutor: &mut Vector, rounds: u32)  {
     let new_left = shuffle_lanes(*right);
     for _ in 0..rounds {
-        let f = shift_stripe(right.clone(), permutor.clone());
-        *right = *left ^ f;
+        shift_stripe(right, permutor.clone());
+        *right ^= *left;
         *permutor = rotate_permutor(*permutor);
         *left = new_left;
     }

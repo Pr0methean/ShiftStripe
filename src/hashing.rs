@@ -28,10 +28,10 @@ impl Hasher for ShiftStripeSponge {
     #[inline]
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes.iter().copied() {
-            self.state[0] ^= shuffle_lanes(shift_stripe(
-                self.state[1],
-                self.state[0]
-            ));
+            let temp_state = self.state[0].clone();
+            shift_stripe(&mut self.state[1], self.state[0]);
+            self.state[0] ^= temp_state;
+            shuffle_lanes(self.state[0]);
             self.state[1][VECTOR_SIZE - 1] ^= META_PERMUTOR.wrapping_mul(byte.into());
             self.state.rotate_left(1);
         }
