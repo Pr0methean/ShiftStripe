@@ -4,6 +4,7 @@
 #![feature(generic_const_exprs)]
 #![feature(iter_collect_into)]
 #![feature(slice_as_chunks)]
+#![feature(portable_simd)]
 
 mod core;
 mod block;
