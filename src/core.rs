@@ -30,6 +30,11 @@ pub(crate) fn shuffle_lanes(n: Vector) -> Vector {
     simd_swizzle!(n, [1, 3, 0, 2])
 }
 
+const PERMUTOR_ROTATIONS: Vector = Vector::from_array([25, 23, 19, 29]);
+pub(crate) fn rotate_permutor(n: Vector) -> Vector {
+    n >> PERMUTOR_ROTATIONS
+}
+
 #[inline]
 fn shuffled_mask_indices(n : &mut Vector) -> [VectorUsize; STRIPE_MASKS.len()] {
     let mut indices = array![i => [i; VECTOR_SIZE]; STRIPE_MASKS.len()];

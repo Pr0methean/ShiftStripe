@@ -2,7 +2,7 @@ use std::mem::swap;
 use rand::{Rng};
 use rand_core::block::BlockRngCore;
 use crate::block::random_block;
-use crate::core::{shift_stripe, shuffle_lanes, Vector, VECTOR_SIZE, Word};
+use crate::core::{rotate_permutor, shift_stripe, shuffle_lanes, Vector, VECTOR_SIZE, Word};
 
 pub const RNG_ROUNDS: u32 = 3;
 
@@ -11,7 +11,7 @@ fn shift_stripe_feistel(left: &mut Vector, right: &mut Vector, permutor: &mut Ve
     for _ in 0..rounds {
         let f = shift_stripe(right.clone(), permutor.clone());
         *right = *left ^ f;
-        *permutor = *permutor >> Vector::splat(25);
+        *permutor = rotate_permutor(*permutor);
         *left = new_left;
     }
 }
