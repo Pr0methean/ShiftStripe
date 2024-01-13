@@ -8,12 +8,12 @@ pub const RNG_ROUNDS: u32 = 3;
 
 fn shift_stripe_feistel<const WORDS_PER_BLOCK: usize>(
         left: &mut Vector, right: &mut Vector, permutor: &mut Vector, rounds: u32)  {
-    let mut new_left = shuffle_lanes(*right);
+    let new_left = shuffle_lanes(*right);
     for _ in 0..rounds {
         let f = shift_stripe(right.clone(), permutor.clone());
         *right = *left ^ f;
-        *permutor = permutor.shr(25);
-        left.copy_from_slice(&new_left);
+        *permutor = *permutor >> Vector::splat(25);
+        *left = new_left;
     }
 }
 

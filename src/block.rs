@@ -46,11 +46,11 @@ pub fn compress_block_to_unit(block: &Vector) -> Word {
 
 #[inline]
 pub fn bytes_to_vector<T: Iterator<Item=u8>>(bytes: T) -> Vector {
-    bytes.into_iter().array_chunks().map(Word::from_be_bytes).collect::<Vec<_>>().try_into().unwrap()
+    bytes.into_iter().array_chunks().map(Word::from_be_bytes).collect()
 }
 
 #[inline]
-pub fn block_to_bytes<const WORDS_PER_BLOCK: usize>(block: [Word; WORDS_PER_BLOCK]) -> [u8; size_of::<[Word; WORDS_PER_BLOCK]>()] {
+pub fn block_to_bytes(block: Vector) -> [u8; size_of::<Vector>()] {
     let byte_vec: Vec<_> = block.iter().copied().flat_map(Word::to_be_bytes).collect();
     byte_vec.try_into().unwrap()
 }

@@ -32,21 +32,21 @@ pub(crate) fn shuffle_lanes(n: Vector) -> Vector {
 #[inline]
 fn shuffled_mask_indices(n : &mut Vector) -> [VectorUsize; STRIPE_MASKS.len()] {
     let mut indices = array![i => [i; VECTOR_SIZE]; STRIPE_MASKS.len()];
-    for lane in 0..VECTOR_SIZE {
-        for i in (1..STRIPE_MASKS.len()).rev() {
-            let modulus = Vector::splat(i as Word + 1);
-            let j = *n % modulus;
-            *n /= &modulus;
-            swap(&mut indices[i][lane], &mut indices[j][lane]);
+    for i in (1..STRIPE_MASKS.len()).rev() {
+        let modulus = Vector::splat(i as Word + 1);
+        let j = *n % modulus;
+        *n /= &modulus;
+        for lane in 0..VECTOR_SIZE {
+            swap(&mut indices[i[lane]][lane], &mut indices[j[lane]][lane]);
         }
     }
-    indices.into_iter().map(VectorUsize::from_array).collect()
+    array![i => VectorUsize::from_array(indices[i]); STRIPE_MASKS.len()]
 }
 
 #[inline]
 fn load_mask_vectors<T>(indices: [VectorUsize; STRIPE_MASKS.len()], a : &mut [Vector; STRIPE_MASKS.len()]) {
     a.iter_mut().zip(indices.into_iter()).for_each(|(a, indices)| {
-        *a = Vector::gather_or_default(&*STRIPE_MASKS, indices);
+        *a = Vector::gather_or_default(STRIPE_MASKS.as_slice(), indices);
     });
 }
 
@@ -57,12 +57,12 @@ pub fn shift_stripe(input: Vector, mut permutor: Vector) -> Vector {
     let swap_selectors = shuffled_mask_indices(&mut permutor);
     let mut swap_masks = [Vector::splat(0); STRIPE_MASKS.len()];
     load_mask_vectors(swap_selectors, &mut swap_masks);
-    let swap_rotation_amounts = Vector::splat(1).shl(swap_selectors);
+    let swap_rotation_amounts = Vector::splat(1).shl(Vector::from(swap_selectors));
     let mut out = input;
     stripe_masks.into_iter().zip(swap_masks).zip(swap_rotation_amounts).for_each(
         |((stripe_mask, swap_mask), swap_rotation_amount)| {
             out ^= (out ^ stripe_mask)
-                .wrapping_add(META_PERMUTOR).rotate_right(3);
+                .wrapping_add(Vector::splat(META_PERMUTOR)).rotate_right(3);
             out = (out & swap_mask).shr(swap_rotation_amount)
                 | (out & !swap_mask).shl(swap_rotation_amount);
         }
