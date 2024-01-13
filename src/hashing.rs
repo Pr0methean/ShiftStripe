@@ -5,16 +5,20 @@ use crate::core::{META_PERMUTOR, shift_stripe, shuffle_lanes, Vector, VECTOR_SIZ
 
 #[derive(Clone, Debug)]
 pub struct ShiftStripeSponge {
-    state: [Vector; 2]
+    first_state: Vector,
+    second_state: Vector
 }
 
 impl ShiftStripeSponge {
-    pub fn new(key: [Word; 2 * VECTOR_SIZE]) -> ShiftStripeSponge {
+    pub fn new(seed: [Word; 2 * VECTOR_SIZE]) -> ShiftStripeSponge {
+        let mut chunks = seed.array_chunks::<VECTOR_SIZE>().copied();
         ShiftStripeSponge {
-            state: key.array_chunks().copied().map(Vector::from_array).collect::<Vec<_>>().try_into().unwrap()
+            first_state: Vector::from_array(chunks.next().unwrap()),
+            second_state: Vector::from_array(chunks.next().unwrap()),
         }
     }
-    pub fn new_random<T: Rng>(rng: &mut T) -> ShiftStripeSponge {
+
+    pub fn from_rng<T: Rng>(rng: &mut T) -> ShiftStripeSponge {
         Self::new(random_block(rng))
     }
 }
@@ -22,18 +26,17 @@ impl ShiftStripeSponge {
 impl Hasher for ShiftStripeSponge {
     #[inline]
     fn finish(&self) -> u64 {
-        compress_block_to_unit(&self.state[0]) ^ compress_block_to_unit(&self.state[1])
+        compress_block_to_unit(&self.first_state) ^ compress_block_to_unit(&self.second_state)
     }
 
     #[inline]
     fn write(&mut self, bytes: &[u8]) {
         for byte in bytes.iter().copied() {
-            let temp_state = self.state[0].clone();
-            shift_stripe(&mut self.state[1], self.state[0]);
-            self.state[0] ^= temp_state;
-            shuffle_lanes(self.state[0]);
-            self.state[1][VECTOR_SIZE - 1] ^= META_PERMUTOR.wrapping_mul(byte.into());
-            self.state.rotate_left(1);
+            let temp_state = self.first_state.clone();
+            self.second_state[VECTOR_SIZE - 1] ^= META_PERMUTOR.wrapping_mul(byte.into());
+            shift_stripe(&mut self.second_state, self.first_state);
+            shuffle_lanes(self.first_state);
+            self.second_state ^= temp_state;
         }
     }
 }
