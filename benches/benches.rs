@@ -14,7 +14,7 @@ mod bench {
 
     #[bench]
     fn benchmark_prng(b: &mut Bencher) {
-        let mut rng = BlockRng64::new(ShiftStripeFeistelRngCore::new_random(&mut thread_rng()));
+        let mut rng = BlockRng64::new(ShiftStripeFeistelRngCore::from_rng(&mut thread_rng()));
         b.iter(|| rng.next_u64());
     }
 
