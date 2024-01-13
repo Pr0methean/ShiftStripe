@@ -34,8 +34,8 @@ impl BlockRngCore for ShiftStripeFeistelRngCore {
             &mut self.state[1],
             &mut temp_block,
             RNG_ROUNDS);
+        *results = (self.state[0] ^ self.state[1]).into();
         self.state.swap(0, 1);
-        *results = self.state[0] ^ self.state[1];
         self.state[1] ^= temp_block;
     }
 }

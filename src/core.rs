@@ -62,8 +62,7 @@ pub fn shift_stripe(input: Vector, mut permutor: Vector) -> Vector {
     let mut out = input;
     stripe_masks.into_iter().zip(swap_masks).zip(swap_rotation_amounts).for_each(
         |((stripe_mask, swap_mask), swap_rotation_amount)| {
-            out ^= (out ^ stripe_mask)
-                .wrapping_add(Vector::splat(META_PERMUTOR)).rotate_right(3);
+            out ^= ((out ^ stripe_mask) + Vector::splat(META_PERMUTOR)).rotate_right(3);
             out = (out & swap_mask).shr(swap_rotation_amount)
                 | (out & !swap_mask).shl(swap_rotation_amount);
         }
