@@ -111,8 +111,8 @@ mod tests {
         let xor1 = prev1 ^ this1;
         let xor2 = prev2 ^ this2;
         let bits_in_block = 8 * size_of::<Vector>();
-        let bits_difference_1: usize = xor1.iter().copied().map(|x| x.count_ones() as u64).sum::<u64>().try_into().unwrap();
-        let bits_difference_2: usize = xor2.iter().copied().map(|x| x.count_ones() as u64).sum::<u64>().try_into().unwrap();
+        let bits_difference_1: usize = xor1.as_array().iter().copied().map(|x| x.count_ones() as u64).sum::<u64>().try_into().unwrap();
+        let bits_difference_2: usize = xor2.as_array().iter().copied().map(|x| x.count_ones() as u64).sum::<u64>().try_into().unwrap();
         if prev1 == this1
             || prev2 == this2
             || prev1 == this2
